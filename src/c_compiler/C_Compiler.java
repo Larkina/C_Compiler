@@ -1,0 +1,32 @@
+
+package c_compiler;
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import lexer.Lexer;
+import lexer.LexerException;
+
+public class C_Compiler {
+
+    public static void main(String[] args) throws FileNotFoundException, IOException {
+        if (args.length == 0){
+             System.out.println(" Simple C Compiler S8303a Larkina O.S. 2012.");
+             return;
+        }
+   /*     String tests = System.getProperty("user.dir") + "\\tests\\lexer\\";
+        String t_n = "3.in";
+        Lexer l = new Lexer(tests + t_n);*/
+        Lexer l = new Lexer(args[0]);
+        try {
+            while (l.next()){
+                System.out.println(l.getToken().toString());
+            }
+        }
+        catch (LexerException e){
+            System.out.println(e.getMessage());
+            return;
+        }
+    }
+}
