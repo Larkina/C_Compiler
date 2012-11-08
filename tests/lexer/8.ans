@@ -1,0 +1,11 @@
+Token{value={, text={, type=L_BRACE}
+Token{value=[, text=[, type=L_BRAKET}
+Token{value=], text=], type=R_BRAKET}
+Token{value=(, text=(, type=L_PARENTHESIS}
+Token{value=), text=), type=R_PARENTHESIS}
+Token{value=., text=., type=POINT}
+Token{value=,, text=,, type=COMMA}
+Token{value=;, text=;, type=SEMICOLON}
+Token{value=%, text=%, type=MOD}
+Token{value=%=, text=%=, type=MOD_ASSIGN}
+Token{value=}, text=}, type=R_BRACE}
