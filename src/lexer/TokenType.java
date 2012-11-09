@@ -15,7 +15,7 @@ public enum TokenType {
     AND_B, OR_B, XOR_B, NOT_B,
     EQ, LT, GT, NE, LE, GE,
     SHL, SHR, SHL_ASSIGN, SHR_ASSIGN,
-
+    COLON, 
     INT, FLOAT, STRING
 
 
