@@ -167,3 +167,5 @@ pip-log.txt
 build.xml
 manifest.mf
 nbproject/
+
+tests/lexer/*.ans
