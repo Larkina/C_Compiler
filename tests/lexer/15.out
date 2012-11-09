@@ -1,0 +1,10 @@
+Token{value=switch, text=switch, type=KEY_WORD}
+Token{value=(, text=(, type=L_PARENTHESIS}
+Token{value=k, text=k, type=VAR}
+Token{value=), text=), type=R_PARENTHESIS}
+Token{value={, text={, type=L_BRACE}
+Token{value=case, text=case, type=KEY_WORD}
+Token{value=1, text=n10, type=INT}
+Token{value=:, text=:, type=COLON}
+Token{value={, text={, type=L_BRACE}
+Incorrect token on 6 line, 4 pos: Unclosed multiline comment

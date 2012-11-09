@@ -1,0 +1,7 @@
+Token{value=int, text=int, type=KEY_WORD}
+Token{value=i, text=i, type=VAR}
+Token{value==, text==, type=ASSIGN}
+Token{value=j, text=j, type=VAR}
+Token{value=|, text=|, type=OR_B}
+Token{value=k, text=k, type=VAR}
+Token{value=;, text=;, type=SEMICOLON}

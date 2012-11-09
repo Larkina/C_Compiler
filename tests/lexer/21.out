@@ -1,0 +1,3 @@
+Token{value=a, text=a, type=VAR}
+Token{value=/, text=/, type=DIV}
+Token{value=*, text=*, type=MUL}

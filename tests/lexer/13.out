@@ -1,0 +1,4 @@
+Token{value=double, text=double, type=KEY_WORD}
+Token{value=i, text=i, type=VAR}
+Token{value==, text==, type=ASSIGN}
+Incorrect token on 1 line, 5 pos: Incorrect float number

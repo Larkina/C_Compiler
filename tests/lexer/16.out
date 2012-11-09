@@ -1,0 +1,12 @@
+Token{value=a, text=a, type=VAR}
+Token{value=a, text=a, type=VAR}
+Token{value=a, text=a, type=VAR}
+Token{value=a, text=a, type=VAR}
+Token{value=a, text=a, type=VAR}
+Token{value=a, text=a, type=VAR}
+Token{value=int, text=int, type=KEY_WORD}
+Token{value=*, text=*, type=MUL}
+Token{value=it, text=it, type=VAR}
+Token{value==, text==, type=ASSIGN}
+Token{value=4, text=n10, type=INT}
+Token{value=;, text=;, type=SEMICOLON}

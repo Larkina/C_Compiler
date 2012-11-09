@@ -1,0 +1,6 @@
+switch(k) {
+	case 1:
+	{
+	 /* unclosed comment
+	}
+}
