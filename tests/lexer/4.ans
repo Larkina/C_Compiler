@@ -3,6 +3,8 @@ Token{value=123, text=n10, type=INT}
 Token{value=ababacva, text=ababacva, type=VAR}
 Token{value=+, text=+, type=PLUS}
 Token{value=0, text=n10, type=INT}
-Token{value="\\ loool \45 \n \xAA", text="\\ loool \45 \n \xAA", type=STRING}
+Token{value="\ loool 55 
+ AAAA", text="\ loool 55 
+ AAAA", type=STRING}
 Token{value=291, text=n16, type=INT}
 Token{value=302, text=n8, type=INT}
