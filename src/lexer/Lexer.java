@@ -278,11 +278,11 @@ public class Lexer {
                 if (next_ch != '-' && next_ch != '+' && !Character.isDigit(next_ch) || was_sign){
                     throwException("Incorrect float number");
                 }
-                was_sign = (curr == '+' || curr == '-');
+                was_sign = isIn(curr, '+' , '-');
                 was_exp = true;
             }
 
-        } while (Character.isDigit(curr) || (curr == '.' || curr == 'e' || curr == '+' || curr == '-'));
+        } while (Character.isDigit(curr) || isIn(curr, '.', 'e', '+', '-'));
         String s = tmp.toString();
         Double dval;
         Integer val;
