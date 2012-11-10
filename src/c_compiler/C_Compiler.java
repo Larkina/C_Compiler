@@ -12,16 +12,16 @@ public class C_Compiler {
 
     public static void main(String[] args) throws FileNotFoundException, IOException {
 
-       /* String tests = System.getProperty("user.dir") + "\\tests\\lexer\\";
-        String t_n = "03.in";
-        Lexer l = new Lexer(tests + t_n);*/
+        String tests = System.getProperty("user.dir") + "\\tests\\lexer\\";
+        String t_n = "02.in";
+        Lexer l = new Lexer(tests + t_n);
         
-        if (args.length == 0){
+       /* if (args.length == 0){
              System.out.println(" Simple C Compiler S8303a Larkina O.S. 2012.");
              System.out.println(" Type filename to scan in parameter");
              return;
            }
-        Lexer l = new Lexer(args[0]);
+        Lexer l = new Lexer(args[0]);*/
         try {
             while (l.next()){
                 System.out.println(l.getToken().toString());

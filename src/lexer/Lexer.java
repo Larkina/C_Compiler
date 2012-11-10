@@ -115,8 +115,17 @@ public class Lexer {
         return tmp.toString();
     }
     
+    void throwException(String msg) throws LexerException {
+        throw new LexerException(l + 1, p + 1, msg);
+    }
+    
+    Token makeToken(Object val, String text, TokenType type){
+        return new Token<>(p + 1, l + 1, val, text, type);
+    }
+    
     private void eatSpace(){
         int tt = curr_pos;
+        
         for(int i = tt; i < buff.length(); ++i){
             curr = buff.charAt(i);
             if (!Character.isSpaceChar(curr)) break;
@@ -160,7 +169,7 @@ public class Lexer {
                     p += 2;
                     if (curr_pos >= buff.length()){
                     // ВСе плохо ничего не нашли скобку не закрыли конец файла
-                        throw new LexerException(l + 1, p + 1, "Unclosed multiline comment");
+                        throwException("Unclosed multiline comment");
                     }
                     curr = buff.charAt(curr_pos);
                 }
@@ -179,6 +188,33 @@ public class Lexer {
         return currentToken;
     }
 
+    Token getIdent() {
+        String s = buildStringWithCh();
+        line = l;
+        pos = curr_pos;
+        TokenType type = TokenType.VAR;
+        if (key_words.contains(s)) {
+            type = TokenType.KEY_WORD;
+        }
+        return makeToken(s, s, type);//new Token<>(p + 1, l + 1, s, s, type);        
+    }
+    
+    Token getHexNumber() throws LexerException {
+        String tmp = buildStringWithCh();
+        String s = tmp.substring(2);
+        Integer val = 0;
+        try {
+            val = Integer.parseInt(s,  16);
+        }
+        catch (Exception e){
+            throwException("Incorrect hex nubmer");
+        }
+        line = l;
+        pos = curr_pos;
+        p += tmp.length() + 1;
+        return new Token<>(p + 1, l + 1, val, "n16", TokenType.INT);    
+    }
+    
     public boolean next() throws LexerException{
         l = line;
   //      p = pos;
@@ -203,13 +239,7 @@ public class Lexer {
         }
         /* Если первая буква, то идентификатор /**/
         if (Character.isLetter(curr)) {
-            String s = buildStringWithCh();
-            line = l;
-            pos = curr_pos;
-            TokenType type = TokenType.VAR;
-            if (key_words.contains(s))
-                type = TokenType.KEY_WORD;
-            currentToken = new Token<>(p + 1, l + 1, s, s, type);
+            currentToken = getIdent();
             return true;
         }
 
@@ -280,7 +310,7 @@ public class Lexer {
             while (curr_pos + 1  < buff.length() && buff.charAt(curr_pos + 1) != '\"'){
                 curr = buff.charAt(++curr_pos);
                 if (curr == '\n'){
-                    throw new LexerException(l+ 1, p + 1, "Unclosed string const");
+                    throwException("Unclosed string const");
                 }
                 if (curr == '\\'){
                     if (curr_pos + 1 == buff.length())
@@ -316,7 +346,7 @@ public class Lexer {
                         if (Character.isLetterOrDigit(f))
                             if (Character.toLowerCase(f) > 'f'){
                                 // Плохая 16ти ричная константа
-                                throw new LexerException(l + 1, p + 1, "Incorrect hex const");
+                                throwException("Incorrect hex const");
                             }
                             else {
                                 res += f;
@@ -325,7 +355,7 @@ public class Lexer {
                        if (Character.isLetterOrDigit(s))
                             if (Character.toLowerCase(s) > 'f'){
                                 // Плохая 16ти ричная константа
-                                throw new LexerException(l + 1, p + 1, "Incorrect hex const");
+                                throwException("Incorrect hex const");
                             }
                             else {
                                 res += s;
@@ -350,7 +380,7 @@ public class Lexer {
                     }
                     if (res.length() == 0) {
                         // Неправильная эскейп последовательность
-                        throw new LexerException(l + 1, p + 1, "Incorrect escape sequence");
+                        throwException("Incorrect escape sequence");
                     }
                     tmp.append(res);
                 }
@@ -359,7 +389,7 @@ public class Lexer {
             }
             if (curr_pos + 1  == buff.length()){
                 // бросить искллючение. мы строковую константу не знакрыли
-                throw new LexerException(l + 1, p + 1, "Unclosed string const");
+                throwException("Unclosed string const");
             }
             tmp.append("\"");
             line = l;
@@ -376,19 +406,7 @@ public class Lexer {
                if (curr_pos + 1 < buff.length() &&
                    Character.toLowerCase(buff.charAt(curr_pos + 1)) == 'x') {
                    // Пробуем получить 16-ти ричное
-                        String tmp = buildStringWithCh();
-                        String s = tmp.substring(2);
-                        Integer val;
-                        try {
-                            val = Integer.parseInt(s,  16);
-                        }
-                        catch (Exception e){
-                            throw new LexerException(l + 1, p + 1, "Incorrect hex nubmer");
-                        }
-                        line = l;
-                        pos = curr_pos;
-                        p += tmp.length() + 1;
-                        currentToken = new Token<>(p + 1, l + 1, val, "n16", TokenType.INT);
+                        currentToken = getHexNumber();
                         return true;
                    }
                 else {
@@ -407,12 +425,12 @@ public class Lexer {
                                     curr = Character.toLowerCase(curr);
                                 } while (Character.isDigit(curr));
                                 String s = tmp.toString();
-                                Integer val;
+                                Integer val = 0;
                                 try {
                                     val = Integer.parseInt(s,  8);
                                 }
                                 catch (Exception e){
-                                    throw new LexerException(l + 1, p + 1, "Incorrect oct number");
+                                    throwException("Incorrect oct number");
                                 }
                                 line = l;
                                 pos = curr_pos;
@@ -439,19 +457,19 @@ public class Lexer {
                 if (curr == '.')
                     if (was_point){
                         // Ошибка, две точки в вещественном числе
-                        throw new LexerException(l + 1, p + 1, "Incorrect float number");
+                        throwException("Incorrect float number");
                     }
                     else
                     was_point = true;
                 if (curr == 'e'){
                     if (was_exp || curr_pos + 1 == buff.length()){
                         // Плохое вещественное число
-                        throw new LexerException(l + 1, p + 1, "Incorrect float number");
+                        throwException("Incorrect float number");
                     }
                     char next_ch = buff.charAt(curr_pos + 1);
                     if (next_ch != '-' && next_ch != '+' && !Character.isDigit(next_ch) || was_sign){
                         // Плохая экспонента
-                        throw new LexerException(l + 1, p + 1, "Incorrect float number");
+                        throwException("Incorrect float number");
                     }
                     was_sign = (curr == '+' || curr == '-');
                     was_exp = true;
@@ -471,7 +489,7 @@ public class Lexer {
                     currentToken = new Token<>(p + 1, l + 1, val, "n10", type);
                 }
             } catch (Exception e){
-                throw new LexerException(l + 1, p + 1, "Incorrect number");
+                throwException("Incorrect number");
             }
             line = l;
             pos = curr_pos;
