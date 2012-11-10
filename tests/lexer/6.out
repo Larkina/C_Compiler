@@ -1,8 +1,0 @@
-Token{value=>=, text=>=, type=GE}
-Token{value=<=, text=<=, type=LE}
-Token{value=>>=, text=>>=, type=SHR_ASSIGN}
-Token{value=<<=, text=<<=, type=SHL_ASSIGN}
-Token{value=>>, text=>>, type=SHR}
-Token{value=<<, text=<<, type=SHL}
-Token{value=!=, text=!=, type=NE}
-Token{value=!, text=!, type=NOT}
