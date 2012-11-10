@@ -241,6 +241,63 @@ public class Lexer {
         return makeToken(val, s, TokenType.INT);    
     }
     
+    Token getNumber() throws LexerException{
+        TokenType type = TokenType.INT;
+        boolean was_point = false;
+        boolean was_exp = false;
+        boolean was_sign = false;
+        StringBuilder tmp = new StringBuilder();
+        do {
+            tmp.append(curr);
+            if (curr_pos + 1 == buff.length())
+            {
+               curr_pos++;
+               break;
+            }
+            curr = buff.charAt(++curr_pos);
+            curr = Character.toLowerCase(curr);
+            if (curr == '.') {
+                if (was_point){
+                    throwException("Incorrect float number");
+                }
+                else {
+                    was_point = true;
+                }
+            }
+            if (curr == 'e'){
+                if (was_exp || curr_pos + 1 == buff.length()){
+                    throwException("Incorrect float number");
+                }
+                char next_ch = buff.charAt(curr_pos + 1);
+                if (next_ch != '-' && next_ch != '+' && !Character.isDigit(next_ch) || was_sign){
+                    throwException("Incorrect float number");
+                }
+                was_sign = (curr == '+' || curr == '-');
+                was_exp = true;
+            }
+
+        } while (Character.isDigit(curr) || (curr == '.' || curr == 'e' || curr == '+' || curr == '-'));
+        String s = tmp.toString();
+        Double dval;
+        Integer val;
+        try { 
+            if (was_point || was_exp){
+                dval = Double.parseDouble(s);
+                return makeToken(dval, s, type);
+            }
+            else {
+                val = Integer.parseInt(s,  10);
+                return makeToken(val, s, type);
+            }
+        } catch (Exception e){
+            throwException("Incorrect number");
+        }
+        line = l;
+        pos = curr_pos;
+        p += tmp.length() + 1;
+        return null;
+    }
+    
     public boolean next() throws LexerException{
         l = line;
   //      p = pos;
@@ -437,66 +494,12 @@ public class Lexer {
                 else {
                     if (curr_pos + 1 < buff.length() &&
                         Character.isDigit(buff.charAt(curr_pos + 1))){
-                        // 8-миричное
-                                currentToken = getOctUnber();
-                                return true;
+                            currentToken = getOctNumber();
+                            return true;
                     }
                  }
             }
-            TokenType type = TokenType.INT;
-            boolean was_point = false;
-            boolean was_exp = false;
-            boolean was_sign = false;
-            StringBuilder tmp = new StringBuilder();
-            do {
-                tmp.append(curr);
-                if (curr_pos + 1 == buff.length())
-                {
-                   curr_pos++;
-                   break;
-                }
-                curr = buff.charAt(++curr_pos);
-                curr = Character.toLowerCase(curr);
-                if (curr == '.')
-                    if (was_point){
-                        // Ошибка, две точки в вещественном числе
-                        throwException("Incorrect float number");
-                    }
-                    else
-                    was_point = true;
-                if (curr == 'e'){
-                    if (was_exp || curr_pos + 1 == buff.length()){
-                        // Плохое вещественное число
-                        throwException("Incorrect float number");
-                    }
-                    char next_ch = buff.charAt(curr_pos + 1);
-                    if (next_ch != '-' && next_ch != '+' && !Character.isDigit(next_ch) || was_sign){
-                        // Плохая экспонента
-                        throwException("Incorrect float number");
-                    }
-                    was_sign = (curr == '+' || curr == '-');
-                    was_exp = true;
-                }
-
-            } while (Character.isDigit(curr) || (curr == '.' || curr == 'e' || curr == '+' || curr == '-'));
-            String s = tmp.toString();
-             Double dval;
-             Integer val;
-            try { 
-                if (was_point || was_exp){
-                    dval = Double.parseDouble(s);
-                    currentToken = new Token<>(p + 1, l + 1, dval, "n10", type);
-                }
-                else {
-                    val = Integer.parseInt(s,  10);
-                    currentToken = new Token<>(p + 1, l + 1, val, "n10", type);
-                }
-            } catch (Exception e){
-                throwException("Incorrect number");
-            }
-            line = l;
-            pos = curr_pos;
-            p += tmp.length() + 1;
+            currentToken = getNumber();
             return true;
        }
         pos = buff.length();
