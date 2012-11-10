@@ -136,7 +136,7 @@ public class Lexer {
             }
             if (curr == '\n'){
                 ++l;
-                p = -1;
+                p = 0;
             }
             ++p;
         }
@@ -144,45 +144,42 @@ public class Lexer {
 
     String eatComments() throws LexerException{
         while (curr == '/'){
-            // Однострочный комментарий
             if (buff.charAt(curr_pos + 1) == '/'){
-                //Захавать всю строку
                 ++l;
                 p = 0;
-                while((curr_pos+1 < buff.length()) && (curr = buff.charAt(curr_pos + 1)) != '\n'){curr_pos++;}
-                curr_pos++;
+                do {
+                    curr = getNextChar();
+                } while (curr != '\n');
                 if (curr_pos >= buff.length()){
                     return "eof";
                 }
             }
             else
-                //многостночный
                 if (buff.charAt(curr_pos + 1) == '*'){
-                    // Хаваем до */, вложенные побоку
-                    curr_pos += 2;
+                    curr_pos++;
                     p+= 2;
-                    while((curr_pos + 1 < buff.length()) &&
-                          (buff.charAt(curr_pos + 1) != '/') && (curr = buff.charAt(curr_pos++)) != '*'){
+                    while ((curr = getNextChar()) != '*' && buff.charAt(curr_pos + 1) != '/') {
                         if (curr == '\n'){
                             l++;
                             p = 0;
                         }
                         p++;
                     }
-                    curr_pos += 2; 
+                    curr_pos++; 
                     p += 2;
                     if (curr_pos >= buff.length()){
-                    // ВСе плохо ничего не нашли скобку не закрыли конец файла
                         throwException("Unclosed multiline comment");
                     }
-                    curr = buff.charAt(curr_pos);
+                    curr = getNextChar();
                 }
                 else
                 {
-                    if (buff.charAt(curr_pos + 1) == '=')
+                    if (buff.charAt(curr_pos + 1) == '=') {
                         return "/=";
-                    else
+                    }
+                    else {
                         return "/";
+                    }
                 }
         }
         return "";
