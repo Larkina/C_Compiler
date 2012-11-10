@@ -14,14 +14,16 @@ public class Lexer {
         BufferedReader fi = new BufferedReader(new FileReader(file_name));
         int i = 0;
         String t;
-        while ((t = fi.readLine()) != null)
-            if (buff.length() == 0)
+        while ((t = fi.readLine()) != null) {
+            if (buff.length() == 0) {
                 buff = t;
-            else
+            }
+            else {
                 buff += '\n' + t;
+            }
+        }
         fi.close();
 
-        // Инициализировать меп
         str_to_type.put(";", TokenType.SEMICOLON);
         str_to_type.put(".", TokenType.POINT);
         str_to_type.put(",", TokenType.COMMA);
@@ -98,7 +100,7 @@ public class Lexer {
     private int l = 0;
     String buff = "";
     char curr = 0;
-    Token currentToken;
+    Token token;
     HashMap<String, TokenType> str_to_type = new HashMap<>();
     HashSet<String> key_words = new HashSet<>();
     
@@ -205,7 +207,7 @@ public class Lexer {
     }
     
     public Token getToken(){
-        return currentToken;
+        return token;
     }
 
     Token getIdent() {
@@ -308,7 +310,7 @@ public class Lexer {
         l = line;
         curr_pos = pos;
         if (curr_pos >= buff.length()){
-            currentToken = makeToken("EOF", "EOF", TokenType.EOF);
+            token = makeToken("EOF", "EOF", TokenType.EOF);
             return false;
         }
         eatSpace();  
@@ -318,7 +320,7 @@ public class Lexer {
                 if ("eof".equals(t)) {
                     return false;
                 }
-                currentToken = makeToken(t, t, str_to_type.get(t));
+                token = makeToken(t, t, str_to_type.get(t));
                 pos = curr_pos + t.length();
                 return true;
             }
@@ -326,65 +328,59 @@ public class Lexer {
         }
 
         if (Character.isLetter(curr)) {
-            currentToken = getIdent();
+            token = getIdent();
             return true;
         }
 
-        // Разделители Операции
-        switch(curr){
-            case ';': case ',': case '.':
-            case '[': case ']': case '{': case '}':
-            case '(': case ')': case ':':
-            {
-                String s = curr + "";
-                TokenType t = str_to_type.get(s);
-                currentToken = makeToken(curr, s, t);
-                line = l;
-                pos = curr_pos + 1;
-                return true;
-            }
-            case '+': case '-': case '*': case '%':
-            case '~': case '!': case '&': case '|':
-            case '=': case '>': case '<': case '^': {
-                String to_str = curr + "";
-                char next_ch = getNextChar(1);
-                if (next_ch != '0'){
-                    String concat = "" + curr + next_ch;
-                    if (next_ch == '='){
-                        currentToken = makeToken(concat, concat, str_to_type.get(concat));
+        if (isIn(curr, ';', ',', '.', '[', ']', '{', '}', '(', ')', '^')){
+            String s = curr + "";
+            TokenType t = str_to_type.get(s);
+            token = makeToken(curr, s, t);
+            line = l;
+            pos = curr_pos + 1;
+            return true;
+        }
+        
+        if (isIn(curr, '+', '-', '*', '%', '~', '!', '&', '|', '=', '>', '<', '^')){
+            String to_str = curr + "";
+            char next_ch = getNextChar(1);
+            if (next_ch != '0'){
+                String concat = "" + curr + next_ch;
+                if (next_ch == '='){
+                    token = makeToken(concat, concat, str_to_type.get(concat));
+                    pos = curr_pos + 2;
+                    p += 2;
+                    line = l;
+                    return true;
+                }
+                if (next_ch == curr){
+                    if (isIn(curr, '+', '-', '=', '|', '&')) {
+                        token = makeToken(concat, concat, str_to_type.get(concat));
                         pos = curr_pos + 2;
                         p += 2;
-                        line = l;
                         return true;
                     }
-                    if (next_ch == curr){
-                        if (isIn(curr, '+', '-', '=', '|', '&')) {
-                            currentToken = makeToken(concat, concat, str_to_type.get(concat));
+                    else
+                        if (isIn(curr, '>', '<')){
+                            if (getNextChar(2) == '='){
+                                token = makeToken(concat + "=", concat + "=", str_to_type.get(concat + "="));
+                                pos = curr_pos + 3;
+                                p += 3;
+                                return true;
+                            }
+                            token = makeToken(concat, concat, str_to_type.get(concat));
                             pos = curr_pos + 2;
                             p += 2;
                             return true;
                         }
-                        else
-                            if (isIn(curr, '>', '<')){
-                                if (getNextChar(2) == '='){
-                                    currentToken = makeToken(concat + "=", concat + "=", str_to_type.get(concat + "="));
-                                    pos = curr_pos + 3;
-                                    p += 3;
-                                    return true;
-                                }
-                                currentToken = makeToken(concat, concat, str_to_type.get(concat));
-                                pos = curr_pos + 2;
-                                p += 2;
-                                return true;
-                            }
-                    }
                 }
-                currentToken = makeToken(to_str, to_str, str_to_type.get(to_str));
-                line = l;
-                pos = curr_pos + 1;
-                ++p;
-                return true;
             }
+            token = makeToken(to_str, to_str, str_to_type.get(to_str));
+            line = l;
+            pos = curr_pos + 1;
+            ++p;
+            return true;
+       
         }
 
         if (curr == '\"'){
@@ -478,7 +474,7 @@ public class Lexer {
             line = l;
             pos = curr_pos + 2;
             p += tmp.length() + 1;
-            currentToken = new Token<>(p + 1, l + 1, tmp.toString(), tmp.toString(), TokenType.STRING);
+            token = new Token<>(p + 1, l + 1, tmp.toString(), tmp.toString(), TokenType.STRING);
             return true;
         }
 
@@ -488,23 +484,23 @@ public class Lexer {
            if (curr == '0'){
                if (curr_pos + 1 < buff.length() &&
                    Character.toLowerCase(buff.charAt(curr_pos + 1)) == 'x') {
-                        currentToken = getHexNumber();
+                        token = getHexNumber();
                         return true;
                    }
                 else {
                     if (curr_pos + 1 < buff.length() &&
                         Character.isDigit(buff.charAt(curr_pos + 1))){
-                            currentToken = getOctNumber();
+                            token = getOctNumber();
                             return true;
                     }
                  }
             }
-            currentToken = getNumber();
+            token = getNumber();
             return true;
        }
         pos = buff.length();
         line = l;
-        currentToken = new Token<>(p + 1, l + 1, "EOF", "EOF", TokenType.EOF);
+        token = new Token<>(p + 1, l + 1, "EOF", "EOF", TokenType.EOF);
         return false;
     }
 
