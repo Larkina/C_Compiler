@@ -101,16 +101,22 @@ public class Lexer {
     Token currentToken;
     HashMap<String, TokenType> str_to_type = new HashMap<>();
     HashSet<String> key_words = new HashSet<>();
-
+    
+    char getNextChar() {
+        curr_pos++;
+        if (curr_pos == buff.length()) {
+            return 0;
+        }
+        else {
+            return buff.charAt(curr_pos);
+        }
+    }
+    
     String buildStringWithCh(){
         StringBuilder tmp = new StringBuilder();
         do {
             tmp.append(curr);
-            if (curr_pos + 1 == buff.length()){
-                curr_pos++;
-                break;
-            }
-            curr = buff.charAt(++curr_pos);
+            curr = getNextChar();
         } while (Character.isLetterOrDigit(curr));
         return tmp.toString();
     }
@@ -183,7 +189,7 @@ public class Lexer {
         }
         return "";
     }
-
+    
     public Token getToken(){
         return currentToken;
     }
