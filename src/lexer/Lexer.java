@@ -202,10 +202,9 @@ public class Lexer {
     
     Token getHexNumber() throws LexerException {
         String tmp = buildStringWithCh();
-        String s = tmp.substring(2);
         Integer val = 0;
         try {
-            val = Integer.parseInt(s,  16);
+            val = Integer.parseInt(tmp.substring(2),  16);
         }
         catch (Exception e){
             throwException("Incorrect hex nubmer");
