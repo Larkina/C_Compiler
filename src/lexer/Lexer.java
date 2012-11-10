@@ -196,7 +196,7 @@ public class Lexer {
         if (key_words.contains(s)) {
             type = TokenType.KEY_WORD;
         }
-        return makeToken(s, s, type);//new Token<>(p + 1, l + 1, s, s, type);        
+        return makeToken(s, s, type);       
     }
     
     Token getHexNumber() throws LexerException {
@@ -212,7 +212,33 @@ public class Lexer {
         line = l;
         pos = curr_pos;
         p += tmp.length() + 1;
-        return new Token<>(p + 1, l + 1, val, "n16", TokenType.INT);    
+        return makeToken(val, tmp, TokenType.INT);
+    }
+    
+    Token getOctNumber() throws LexerException{
+        StringBuilder tmp = new StringBuilder();
+        do {
+            tmp.append(curr);
+            if (curr_pos + 1 == buff.length())
+            {
+                curr_pos++;
+                break;
+            }
+            curr = buff.charAt(++curr_pos);
+            curr = Character.toLowerCase(curr);
+        } while (Character.isDigit(curr));
+        String s = tmp.toString();
+        Integer val = 0;
+        try {
+            val = Integer.parseInt(s,  8);
+        }
+        catch (Exception e){
+            throwException("Incorrect oct number");
+        }
+        line = l;
+        pos = curr_pos;
+        p += tmp.length() + 1;
+        return makeToken(val, s, TokenType.INT);    
     }
     
     public boolean next() throws LexerException{
@@ -405,7 +431,6 @@ public class Lexer {
            if (curr == '0'){
                if (curr_pos + 1 < buff.length() &&
                    Character.toLowerCase(buff.charAt(curr_pos + 1)) == 'x') {
-                   // Пробуем получить 16-ти ричное
                         currentToken = getHexNumber();
                         return true;
                    }
@@ -413,29 +438,7 @@ public class Lexer {
                     if (curr_pos + 1 < buff.length() &&
                         Character.isDigit(buff.charAt(curr_pos + 1))){
                         // 8-миричное
-                                StringBuilder tmp = new StringBuilder();
-                                do {
-                                    tmp.append(curr);
-                                    if (curr_pos + 1 == buff.length())
-                                    {
-                                        curr_pos++;
-                                        break;
-                                    }
-                                    curr = buff.charAt(++curr_pos);
-                                    curr = Character.toLowerCase(curr);
-                                } while (Character.isDigit(curr));
-                                String s = tmp.toString();
-                                Integer val = 0;
-                                try {
-                                    val = Integer.parseInt(s,  8);
-                                }
-                                catch (Exception e){
-                                    throwException("Incorrect oct number");
-                                }
-                                line = l;
-                                pos = curr_pos;
-                                p += tmp.length() + 1;
-                                currentToken = new Token<>(p + 1, l + 1, val, "n8", TokenType.INT);
+                                currentToken = getOctUnber();
                                 return true;
                     }
                  }
