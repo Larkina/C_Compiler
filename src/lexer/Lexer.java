@@ -129,6 +129,16 @@ public class Lexer {
         return new Token<>(p + 1, l + 1, val, text, type);
     }
     
+    public static <T> boolean isIn(T t, T... ts) {
+        for(T i: ts) { 
+            if (t.equals(i)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    
     private void eatSpace(){
         while ((curr = getNextChar()) != 0){
             if (!Character.isSpaceChar(curr)) {
@@ -219,18 +229,11 @@ public class Lexer {
         StringBuilder tmp = new StringBuilder();
         do {
             tmp.append(curr);
-            if (curr_pos + 1 == buff.length())
-            {
-                curr_pos++;
-                break;
-            }
-            curr = buff.charAt(++curr_pos);
-            curr = Character.toLowerCase(curr);
+            curr = getNextChar();
         } while (Character.isDigit(curr));
-        String s = tmp.toString();
         Integer val = 0;
         try {
-            val = Integer.parseInt(s,  8);
+            val = Integer.parseInt(tmp.toString(), 8);
         }
         catch (Exception e){
             throwException("Incorrect oct number");
@@ -238,7 +241,7 @@ public class Lexer {
         line = l;
         pos = curr_pos;
         p += tmp.length() + 1;
-        return makeToken(val, s, TokenType.INT);    
+        return makeToken(val, tmp.toString(), TokenType.INT);    
     }
     
     Token getNumber() throws LexerException{
@@ -249,13 +252,7 @@ public class Lexer {
         StringBuilder tmp = new StringBuilder();
         do {
             tmp.append(curr);
-            if (curr_pos + 1 == buff.length())
-            {
-               curr_pos++;
-               break;
-            }
-            curr = buff.charAt(++curr_pos);
-            curr = Character.toLowerCase(curr);
+            curr = Character.toLowerCase(getNextChar());
             if (curr == '.') {
                 if (was_point){
                     throwException("Incorrect float number");
@@ -300,32 +297,29 @@ public class Lexer {
     
     public boolean next() throws LexerException{
         l = line;
-  //      p = pos;
         curr_pos = pos;
-        // Съели пробелы в начале
-        if (curr_pos == buff.length()){
-            currentToken = new Token<>(p, l + 1, "EOF", "EOF", TokenType.EOF);
+        if (curr_pos >= buff.length()){
+            currentToken = makeToken("EOF", "EOF", TokenType.EOF);
             return false;
         }
         eatSpace();  
-        // Деление или комментарий
         while (curr == '/'){
             String t = eatComments();
-            if (t != ""){
-               if (t == "eof")
-                   return false;
-               currentToken = new Token<>(p + 1, l + 1, t, t, str_to_type.get(t));
-               pos = curr_pos + t.length();
-               return true;
+            if (!"".equals(t)){
+                if ("eof".equals(t)) {
+                    return false;
+                }
+                currentToken = makeToken(t, t, str_to_type.get(t));
+                pos = curr_pos + t.length();
+                return true;
             }
             eatSpace();
         }
-        /* Если первая буква, то идентификатор /**/
+
         if (Character.isLetter(curr)) {
             currentToken = getIdent();
             return true;
         }
-
 
         // Разделители Операции
         switch(curr){
@@ -335,7 +329,7 @@ public class Lexer {
             {
                 String s = curr + "";
                 TokenType t = str_to_type.get(s);
-                currentToken = new Token(p + 1, l + 1, s, s, t);
+                currentToken = makeToken(curr, s, t);
                 line = l;
                 pos = curr_pos + 1;
                 return true;
@@ -349,7 +343,7 @@ public class Lexer {
                     String concat = "" + curr + next_ch;
                     // *= +* -=
                     if (next_ch == '='){
-                        currentToken = new Token(p + 1, l + 1, concat, concat, str_to_type.get(concat));
+                        currentToken = makeToken(concat, concat, str_to_type.get(concat));
                         pos = curr_pos + 2;
                         p += 2;
                         line = l;
@@ -357,7 +351,7 @@ public class Lexer {
                     }
                     if (next_ch == curr){
                         if (curr == '+' || curr == '-' || curr == '=' || curr == '|' || curr == '&') {
-                            currentToken = new Token(p + 1, l + 1, concat, concat, str_to_type.get(concat));
+                            currentToken = makeToken(concat, concat, str_to_type.get(concat));
                             pos = curr_pos + 2;
                             p += 2;
                             return true;
