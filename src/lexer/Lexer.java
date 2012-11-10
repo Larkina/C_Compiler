@@ -347,10 +347,9 @@ public class Lexer {
             case '~': case '!': case '&': case '|':
             case '=': case '>': case '<': case '^': {
                 String to_str = curr + "";
-                if (curr_pos + 1 < buff.length()){
-                    char next_ch = buff.charAt(curr_pos + 1);
+                char next_ch = getNextChar(1);
+                if (next_ch != '0'){
                     String concat = "" + curr + next_ch;
-                    // *= +* -=
                     if (next_ch == '='){
                         currentToken = makeToken(concat, concat, str_to_type.get(concat));
                         pos = curr_pos + 2;
@@ -366,29 +365,27 @@ public class Lexer {
                             return true;
                         }
                         else
-                            if (curr == '>' || curr == '<'){
-                                if (curr_pos + 2 < buff.length() && buff.charAt(curr_pos + 2) == '='){
-                                    currentToken = new Token(p + 1, l + 1, concat + "=", concat + "=", str_to_type.get(concat + "="));
+                            if (isIn(curr, '>', '<')){
+                                if (getNextChar(2) == '='){
+                                    currentToken = makeToken(concat + "=", concat + "=", str_to_type.get(concat + "="));
                                     pos = curr_pos + 3;
                                     p += 3;
                                     return true;
                                 }
-                                currentToken = new Token(p + 1, l + 1, concat, concat, str_to_type.get(concat));
+                                currentToken = makeToken(concat, concat, str_to_type.get(concat));
                                 pos = curr_pos + 2;
                                 p += 2;
                                 return true;
                             }
                     }
                 }
-                currentToken = new Token(p + 1, l + 1, to_str, to_str, str_to_type.get(to_str));
+                currentToken = makeToken(to_str, to_str, str_to_type.get(to_str));
                 line = l;
                 pos = curr_pos + 1;
                 ++p;
                 return true;
             }
         }
-        
-        // Строка
 
         if (curr == '\"'){
             StringBuilder tmp = new StringBuilder();
