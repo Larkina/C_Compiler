@@ -104,7 +104,7 @@ public class Lexer {
     
     char getNextChar() {
         curr_pos++;
-        if (curr_pos == buff.length()) {
+        if (curr_pos >= buff.length()) {
             return 0;
         }
         else {
@@ -130,17 +130,15 @@ public class Lexer {
     }
     
     private void eatSpace(){
-        int tt = curr_pos;
-        
-        for(int i = tt; i < buff.length(); ++i){
-            curr = buff.charAt(i);
-            if (!Character.isSpaceChar(curr)) break;
+        while ((curr = getNextChar()) != 0){
+            if (!Character.isSpaceChar(curr)) {
+                break;
+            }
             if (curr == '\n'){
                 ++l;
                 p = -1;
             }
             ++p;
-            ++curr_pos;
         }
     }
 
