@@ -112,6 +112,15 @@ public class Lexer {
         }
     }
     
+    char getNextChar(int idx){
+        if (curr_pos + idx >= buff.length()) {
+            return 0;
+        }
+        else {
+            return buff.charAt(curr_pos + idx);
+        }
+    }
+    
     String buildStringWithCh(){
         StringBuilder tmp = new StringBuilder();
         do {
@@ -350,7 +359,7 @@ public class Lexer {
                         return true;
                     }
                     if (next_ch == curr){
-                        if (curr == '+' || curr == '-' || curr == '=' || curr == '|' || curr == '&') {
+                        if (isIn(curr, '+', '-', '=', '|', '&')) {
                             currentToken = makeToken(concat, concat, str_to_type.get(concat));
                             pos = curr_pos + 2;
                             p += 2;
