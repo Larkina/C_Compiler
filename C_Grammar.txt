@@ -111,7 +111,7 @@ assignment-operator
 
 expression
     assignment-expression
-    expression , assignment-expression
+    assignment-expression , expression
 
 constant-expression
     conditional-expression

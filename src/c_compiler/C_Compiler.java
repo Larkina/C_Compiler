@@ -16,7 +16,7 @@ public class C_Compiler {
         
        /* if (args.length == 0){
              System.out.println(" Simple C Compiler S8303a Larkina O.S. 2012.");
-             System.out.println(" Type filename to scan in parameter");
+             System.out.println("Usage: java -jar C_compiler.java filename");
              return;
            }
         Lexer l = new Lexer(args[0]);*/

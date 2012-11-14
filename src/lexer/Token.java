@@ -28,5 +28,9 @@ public class Token<T> {
     T value;
     String text;
     TokenType type;
-
+    
+    public TokenType getType() {
+        return type;
+    }
+    
 }
