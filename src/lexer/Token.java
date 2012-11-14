@@ -12,7 +12,7 @@ public class Token<T> {
 
     @Override
     public String toString() {
-         return "Token{" + "value=" + value + ", text=" + text + ", type=" + type + '}';
+         return "value=" + value + ", text=" + text + ", type=" + type;
         //return "Token{" + "col=" + col + ", row=" + row + ", value=" + value + ", text=" + text + ", type=" + type + '}';
     }
 

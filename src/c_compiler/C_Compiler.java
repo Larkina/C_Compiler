@@ -3,7 +3,6 @@ package c_compiler;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import lexer.Lexer;
 import lexer.LexerException;
@@ -13,7 +12,7 @@ public class C_Compiler {
     public static void main(String[] args) throws FileNotFoundException, IOException {
         
         String tests = System.getProperty("user.dir") + "\\tests\\lexer\\";
-        String t_n = "02.in";
+        String t_n = "03.in";
         Lexer l = new Lexer(tests + t_n);
         
        /* if (args.length == 0){
@@ -29,7 +28,6 @@ public class C_Compiler {
         }
         catch (LexerException e){
             System.out.println(e.getMessage());
-            return;
         }
     }
 }

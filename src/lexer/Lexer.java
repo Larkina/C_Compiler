@@ -79,7 +79,7 @@ public class Lexer {
     private int p = 0;
     private int l = 0;
     PushbackInputStream in;
-    char curr = 0;
+    char curr = 1;
     Token token;
     HashMap<String, TokenType> str_to_type = new HashMap<>();
     HashSet<String> key_words = new HashSet<>();
@@ -140,55 +140,56 @@ public class Lexer {
     
     private void eatSpace() throws IOException{
         while ((curr = getNextChar()) != 0){
-            if (!Character.isSpaceChar(curr)) {
-                break;
-            }
-            if (curr == '\n'){
+            if (curr == '\r' && getNextChar(1) == '\n'){
                 ++l;
                 p = 0;
+                curr = getNextChar();
+                continue;
+            }
+            if (!Character.isSpaceChar(curr)) {
+                break;
             }
             ++p;
         }
     }
 
     String eatComments() throws LexerException, IOException{
-        while (curr == '/'){
-            if (getNextChar(1) == '/'){
-                ++l;
-                p = 0;
-                do {
-                    curr = getNextChar();
-                } while (curr != '\n' || curr != 0);
+        if (getNextChar(1) == '/'){
+            ++l;
+            p = 0;
+            do {
+                curr = getNextChar();
+            } while (curr != '\n' && curr != 0);
+            if (curr == 0){
+                return "eof";
+            }
+        }
+        else
+            if (getNextChar(1) == '*'){
+                p+= 2;
+                curr = getNextChar();
+                while ((curr = getNextChar()) != '*' && getNextChar(1) != '/' && curr != 0) {
+                    if (curr == '\n'){
+                        l++;
+                        p = 0;
+                    }
+                    p++;
+                } 
+                p += 2;
                 if (curr == 0){
-                    return "eof";
+                    throwException("Unclosed multiline comment");
                 }
+                curr = getNextChar();
             }
             else
-                if (getNextChar(1) == '*'){
-                    p+= 2;
-                    while ((curr = getNextChar()) != '*' && getNextChar(1) != '/' && curr != 0) {
-                        if (curr == '\n'){
-                            l++;
-                            p = 0;
-                        }
-                        p++;
-                    } 
-                    p += 2;
-                    if (curr == 0){
-                        throwException("Unclosed multiline comment");
-                    }
-                    curr = getNextChar();
+            {
+                if (getNextChar(1) == '=') {
+                    return "/=";
                 }
-                else
-                {
-                    if (getNextChar(1) == '=') {
-                        return "/=";
-                    }
-                    else {
-                        return "/";
-                    }
+                else {
+                    return "/";
                 }
-        }
+            }
         return "";
     }
     
