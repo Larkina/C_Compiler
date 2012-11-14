@@ -259,6 +259,8 @@ public class Lexer {
                 }
                 was_sign = isIn(curr, '+' , '-');
                 was_exp = true;
+                tmp.append(curr);
+                curr = next_ch;
             }
 
         } while (Character.isDigit(curr) || isIn(curr, '.', 'e', '+', '-'));
