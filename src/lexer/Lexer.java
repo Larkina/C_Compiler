@@ -1,9 +1,9 @@
 package lexer;
 
-import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.PushbackInputStream;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -11,18 +11,7 @@ public class Lexer {
 
     public Lexer(String file_name) throws FileNotFoundException, IOException {
         this.file_name = file_name;
-        BufferedReader fi = new BufferedReader(new FileReader(file_name));
-        int i = 0;
-        String t;
-        while ((t = fi.readLine()) != null) {
-            if (buff.length() == 0) {
-                buff = t;
-            }
-            else {
-                buff += '\n' + t;
-            }
-        }
-        fi.close();
+        in = new PushbackInputStream(new FileInputStream(file_name));
 
         str_to_type.put(";", TokenType.SEMICOLON);
         str_to_type.put(".", TokenType.POINT);
@@ -87,36 +76,39 @@ public class Lexer {
     }
 
     String file_name;
-    private int line = 0;
-    private int curr_pos = 0;
     private int p = 0;
     private int l = 0;
-    String buff = "";
+    PushbackInputStream in;
     char curr = 0;
     Token token;
     HashMap<String, TokenType> str_to_type = new HashMap<>();
     HashSet<String> key_words = new HashSet<>();
     
-    char getNextChar() {
-        curr_pos++;
-        if (curr_pos >= buff.length()) {
+    char getNextChar() throws IOException {
+        int res = -1;
+        res = in.read();
+        if (res == -1) {
             return 0;
         }
         else {
-            return buff.charAt(curr_pos);
+            return (char) res;
         }
     }
     
-    char getNextChar(int idx){
-        if (curr_pos + idx >= buff.length()) {
-            return 0;
+    char getNextChar(int idx) throws IOException{
+        byte[] arr = new byte[idx];
+        int i = 0;
+        while (i < idx) {
+            arr[i] = (byte) in.read();
+            if (arr[i++] == -1) {
+                return 0;
+            }
         }
-        else {
-            return buff.charAt(curr_pos + idx);
-        }
+        in.unread(arr);
+        return (char)arr[idx - 1];
     }
     
-    String buildStringWithCh(){
+    String buildStringWithCh() throws IOException{
         StringBuilder tmp = new StringBuilder();
         do {
             tmp.append(curr);
@@ -142,12 +134,11 @@ public class Lexer {
         return false;
     }
 
-    void setParam(int pp, int cp) {
+    void setParam(int pp) {
         p = pp;
-        curr_pos = cp;
     }
     
-    private void eatSpace(){
+    private void eatSpace() throws IOException{
         while ((curr = getNextChar()) != 0){
             if (!Character.isSpaceChar(curr)) {
                 break;
@@ -160,32 +151,30 @@ public class Lexer {
         }
     }
 
-    String eatComments() throws LexerException{
+    String eatComments() throws LexerException, IOException{
         while (curr == '/'){
             if (getNextChar(1) == '/'){
                 ++l;
                 p = 0;
                 do {
                     curr = getNextChar();
-                } while (curr != '\n');
-                if (curr_pos >= buff.length()){
+                } while (curr != '\n' || curr != 0);
+                if (curr == 0){
                     return "eof";
                 }
             }
             else
                 if (getNextChar(1) == '*'){
-                    curr_pos++;
                     p+= 2;
-                    while ((curr = getNextChar()) != '*' && buff.charAt(curr_pos + 1) != '/') {
+                    while ((curr = getNextChar()) != '*' && getNextChar(1) != '/' && curr != 0) {
                         if (curr == '\n'){
                             l++;
                             p = 0;
                         }
                         p++;
-                    }
-                    curr_pos++; 
+                    } 
                     p += 2;
-                    if (curr_pos >= buff.length()){
+                    if (curr == 0){
                         throwException("Unclosed multiline comment");
                     }
                     curr = getNextChar();
@@ -207,7 +196,7 @@ public class Lexer {
         return token;
     }
 
-    Token getIdent() {
+    Token getIdent() throws IOException {
         String s = buildStringWithCh();
         TokenType type = TokenType.VAR;
         if (key_words.contains(s)) {
@@ -216,7 +205,7 @@ public class Lexer {
         return makeToken(s, s, type);       
     }
     
-    Token getHexNumber() throws LexerException {
+    Token getHexNumber() throws LexerException, IOException {
         String tmp = buildStringWithCh();
         Integer val = 0;
         try {
@@ -229,7 +218,7 @@ public class Lexer {
         return makeToken(val, tmp, TokenType.INT);
     }
     
-    Token getOctNumber() throws LexerException{
+    Token getOctNumber() throws LexerException, IOException{
         StringBuilder tmp = new StringBuilder();
         do {
             tmp.append(curr);
@@ -246,7 +235,7 @@ public class Lexer {
         return makeToken(val, tmp.toString(), TokenType.INT);    
     }
     
-    Token getNumber(String ... args) throws LexerException{
+    Token getNumber(String ... args) throws LexerException, IOException{
         TokenType type = TokenType.INT;
         boolean was_point = false;
         boolean was_exp = false;
@@ -292,7 +281,7 @@ public class Lexer {
         return null;
     }
     
-    Token getString() throws LexerException{
+    Token getString() throws LexerException, IOException{
         StringBuilder tmp = new StringBuilder();
         tmp.append('\"');
         StringBuilder val = new StringBuilder();
@@ -308,7 +297,6 @@ public class Lexer {
                     for(i = 1, t = getNextChar(i); i < 3 && Character.isDigit(t); ++i) {
                         res += t;
                     }
-                    curr_pos += res.length();
                     tmp.append(tail).append(res);
                     val.append(Integer.parseInt(tail + res, 8));
                 }
@@ -317,7 +305,6 @@ public class Lexer {
                     for(i = 1, t = getNextChar(i); i < 4 && Character.isLetterOrDigit(t); ++i) {
                         res += t;
                     }
-                    curr_pos += res.length();
                     tmp.append(res);
                     val.append(Integer.parseInt(res, 16));
                 }
@@ -347,31 +334,30 @@ public class Lexer {
                 tmp.append(curr);
             }
         }
-        if (curr_pos + 1  == buff.length()){
+        if (getNextChar(1) == 0){
             throwException("Unclosed string const");
         }
         tmp.append("\"");
-        curr_pos += 2;
         p += tmp.length() + 1;
         return makeToken(val.toString(), tmp.toString(), TokenType.STRING);    
     }
     
-    Token getOperation() {
+    Token getOperation() throws IOException {
         Token tmpToken;
         String to_str = curr + "";
         char next_ch = getNextChar(1);
         if (next_ch != 0){
             String concat = "" + curr + next_ch;
             if ((curr == '-' && next_ch == '>') || next_ch == '=') {
-                setParam(p + 2, curr_pos + 2);
+                setParam(p + 2);
             }
             if (next_ch == curr){
                 if (isIn(curr, '>', '<') && getNextChar(2) == '='){
                     concat = concat + "=";
-                    setParam(p + 3, curr_pos + 3);
+                    setParam(p + 3);
                 }
                 else {
-                    setParam(p + 2, curr_pos + 2);
+                    setParam(p + 2);
                 }
             }
             tmpToken = makeToken(concat, concat, str_to_type.get(concat));
@@ -379,13 +365,13 @@ public class Lexer {
         else 
         {
             tmpToken = makeToken(to_str, to_str, str_to_type.get(to_str));
-            setParam(p + 1, curr_pos + 1);
+            setParam(p + 1);
         }    
         return tmpToken;
     }
     
-    public boolean next() throws LexerException{
-        if (curr_pos >= buff.length()){
+    public boolean next() throws LexerException, IOException{
+        if (curr == 0){
             token = makeToken("EOF", "EOF", TokenType.EOF);
             return false;
         }
@@ -397,7 +383,6 @@ public class Lexer {
                     return false;
                 }
                 token = makeToken(t, t, str_to_type.get(t));
-                curr_pos += t.length();
                 return true;
             }
             eatSpace();
@@ -415,7 +400,6 @@ public class Lexer {
             else {
                 token = makeToken(curr, curr + "", str_to_type.get(curr + ""));
             }
-            curr_pos++;
             return true;
         }
         
@@ -446,7 +430,7 @@ public class Lexer {
             return true;
        }
        
-        curr_pos = buff.length();
+        curr = 0;
         token = makeToken("EOF", "EOF", TokenType.EOF);
         return false;
     }
