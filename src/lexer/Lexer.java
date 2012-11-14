@@ -114,6 +114,7 @@ public class Lexer {
             tmp.append(curr);
             curr = getNextChar();
         } while (Character.isLetterOrDigit(curr));
+        in.unread(curr);
         return tmp.toString();
     }
     
@@ -241,7 +242,11 @@ public class Lexer {
         boolean was_point = false;
         boolean was_exp = false;
         boolean was_sign = false;
-        StringBuilder tmp = new StringBuilder(args[0]);
+        String bonus = "";
+        if (args.length != 0) {
+            bonus = args[0];
+        }
+        StringBuilder tmp = new StringBuilder(bonus);
         do {
             tmp.append(curr);
             curr = Character.toLowerCase(getNextChar());
@@ -263,6 +268,7 @@ public class Lexer {
             }
 
         } while (Character.isDigit(curr) || isIn(curr, '.', 'e', '+', '-'));
+        in.unread(curr);
         String s = tmp.toString();
         Double dval;
         Integer val;
@@ -295,19 +301,35 @@ public class Lexer {
                 String res = "";
                 if (Character.isDigit(tail)){
                     char t; int i;
-                    for(i = 1, t = getNextChar(i); i < 3 && Character.isDigit(t); ++i) {
-                        res += t;
+                    for(i = 1; i < 3; ++i) {
+                        t = getNextChar();
+                        if (Character.isDigit(t)) {
+                            res += t;
+                        } 
+                        else {
+                            in.unread(t);
+                            break;
+                        }
                     }
-                    tmp.append(tail).append(res);
-                    val.append(Integer.parseInt(tail + res, 8));
+                    tmp.append("\\").append(tail).append(res);
+                    val.append((char)Integer.parseInt(tail + res, 8));
+                    continue;
                 }
                 if (tail == 'x'){
                     char t; int i;
-                    for(i = 1, t = getNextChar(i); i < 4 && Character.isLetterOrDigit(t); ++i) {
-                        res += t;
+                    for(i = 1; i < 4; ++i) {
+                        t = getNextChar();
+                        if (Character.isLetterOrDigit(t)) {
+                            res += t;
+                        } 
+                        else {
+                            in.unread(t);
+                            break;
+                        }
                     }
-                    tmp.append(res);
-                    val.append(Integer.parseInt(res, 16));
+                    tmp.append("\\x").append(res);
+                    val.append((char)Integer.parseInt(res, 16));
+                    continue;
                 }
                 switch(tail){
                     case '\\': {res = "\\"; break;}
@@ -325,9 +347,9 @@ public class Lexer {
                     //throwException("Incorrect escape sequence");
                 }
                 else {
-                    val.append('\\' + tail);
+                    val.append(res);
                 }
-                tmp.append(res);
+                tmp.append("\\" + tail);
                 
             }
             else {
@@ -348,25 +370,28 @@ public class Lexer {
         String to_str = curr + "";
         char next_ch = getNextChar(1);
         if (next_ch != 0){
-            String concat = "" + curr + next_ch;
+            String concat = "" + curr;
             if ((curr == '-' && next_ch == '>') || next_ch == '=') {
                 setParam(p + 2);
+                concat += next_ch;
             }
             if (next_ch == curr){
                 if (isIn(curr, '>', '<') && getNextChar(2) == '='){
-                    concat = concat + "=";
+                    concat = concat + next_ch + "=";
                     setParam(p + 3);
                 }
                 else {
                     setParam(p + 2);
+                    concat += next_ch;
                 }
             }
             tmpToken = makeToken(concat, concat, str_to_type.get(concat));
+            setParam(p + 1);
         } 
         else 
         {
             tmpToken = makeToken(to_str, to_str, str_to_type.get(to_str));
-            setParam(p + 1);
+            
         }    
         return tmpToken;
     }
