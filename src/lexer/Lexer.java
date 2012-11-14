@@ -11,7 +11,7 @@ public class Lexer {
 
     public Lexer(String file_name) throws FileNotFoundException, IOException {
         this.file_name = file_name;
-        in = new PushbackInputStream(new FileInputStream(file_name));
+        in = new PushbackInputStream(new FileInputStream(file_name), 2);
 
         str_to_type.put(";", TokenType.SEMICOLON);
         str_to_type.put(".", TokenType.POINT);
@@ -97,13 +97,7 @@ public class Lexer {
     
     char getNextChar(int idx) throws IOException{
         byte[] arr = new byte[idx];
-        int i = 0;
-        while (i < idx) {
-            arr[i] = (byte) in.read();
-            if (arr[i++] == -1) {
-                return 0;
-            }
-        }
+        in.read(arr, 0, arr.length);
         in.unread(arr);
         return (char)arr[idx - 1];
     }
@@ -349,7 +343,7 @@ public class Lexer {
                 else {
                     val.append(res);
                 }
-                tmp.append("\\" + tail);
+                tmp.append("\\").append(tail);
                 
             }
             else {
@@ -371,7 +365,7 @@ public class Lexer {
         char next_ch = getNextChar(1);
         if (next_ch != 0){
             String concat = "" + curr;
-            if ((curr == '-' && next_ch == '>') || next_ch == '=') {
+            if ((curr == '-' && next_ch == '>')||( next_ch == '=' && curr != next_ch)) {
                 setParam(p + 2);
                 concat += next_ch;
             }
@@ -379,6 +373,7 @@ public class Lexer {
                 if (isIn(curr, '>', '<') && getNextChar(2) == '='){
                     concat = concat + next_ch + "=";
                     setParam(p + 3);
+                    getNextChar();
                 }
                 else {
                     setParam(p + 2);
@@ -386,7 +381,12 @@ public class Lexer {
                 }
             }
             tmpToken = makeToken(concat, concat, str_to_type.get(concat));
-            setParam(p + 1);
+            if (concat.equals(to_str)) {
+                setParam(p + 1);
+            } 
+            else {
+                getNextChar();
+            }
         } 
         else 
         {
@@ -409,6 +409,9 @@ public class Lexer {
                     return false;
                 }
                 token = makeToken(t, t, str_to_type.get(t));
+                if ("/=".equals(t)) {
+                    getNextChar();
+                }
                 return true;
             }
             eatSpace();

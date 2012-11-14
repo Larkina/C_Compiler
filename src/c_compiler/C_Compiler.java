@@ -1,7 +1,6 @@
 
 package c_compiler;
 
-import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import lexer.Lexer;
@@ -12,7 +11,7 @@ public class C_Compiler {
     public static void main(String[] args) throws FileNotFoundException, IOException {
         
         String tests = System.getProperty("user.dir") + "\\tests\\lexer\\";
-        String t_n = "22.in";
+        String t_n = "06.in";
         Lexer l = new Lexer(tests + t_n);
         
        /* if (args.length == 0){
