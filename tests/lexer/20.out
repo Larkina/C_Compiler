@@ -1,2 +1,2 @@
-Token{value=a, text=a, type=VAR}
-Token{value=b, text=b, type=VAR}
+value=a, text=a, type=VAR
+value=b, text=b, type=VAR

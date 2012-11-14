@@ -1,1 +1,2 @@
-Token{value="	   \\", text="	   \\", type=STRING}
+value=	 
+ \\, text="\t \r \b \\\\", type=STRING

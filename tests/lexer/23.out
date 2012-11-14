@@ -1,0 +1,6 @@
+value=a, text=a, type=VAR
+value=->, text=->, type=ARROW
+value=length, text=length, type=VAR
+value=(, text=(, type=L_PARENTHESIS
+value=), text=), type=R_PARENTHESIS
+value=;, text=;, type=SEMICOLON

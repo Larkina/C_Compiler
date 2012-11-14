@@ -11,7 +11,7 @@ public class C_Compiler {
     public static void main(String[] args) throws FileNotFoundException, IOException {
         
         String tests = System.getProperty("user.dir") + "\\tests\\lexer\\";
-        String t_n = "08.in";
+        String t_n = "23.in";
         Lexer l = new Lexer(tests + t_n);
         
        /* if (args.length == 0){

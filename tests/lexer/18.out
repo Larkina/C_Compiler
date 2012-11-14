@@ -1,1 +1,2 @@
-Token{value=14516.0, text=n10, type=INT}
+value=14516.0, text=145.16e+2, type=FLOAT
+value=0.1993, text=0.1993, type=FLOAT

@@ -141,6 +141,10 @@ public class Lexer {
                 curr = getNextChar();
                 continue;
             }
+            if (curr == '\t') {
+                p += 4;
+                continue;
+            }
             if (!Character.isSpaceChar(curr)) {
                 break;
             }
@@ -172,6 +176,7 @@ public class Lexer {
                 } 
                 p += 2;
                 if (curr == 0){
+                    ++p;
                     throwException("Unclosed multiline comment");
                 }
                 curr = getNextChar();
@@ -198,6 +203,7 @@ public class Lexer {
         if (key_words.contains(s)) {
             type = TokenType.KEY_WORD;
         }
+        p += s.length();
         return makeToken(s, s, type);       
     }
     
@@ -232,13 +238,13 @@ public class Lexer {
     }
     
     Token getNumber(String ... args) throws LexerException, IOException{
-        TokenType type = TokenType.INT;
         boolean was_point = false;
         boolean was_exp = false;
         boolean was_sign = false;
         String bonus = "";
         if (args.length != 0) {
             bonus = args[0];
+            was_point = true;
         }
         StringBuilder tmp = new StringBuilder(bonus);
         do {
@@ -271,11 +277,11 @@ public class Lexer {
         try { 
             if (was_point || was_exp){
                 dval = Double.parseDouble(s);
-                return makeToken(dval, s, type);
+                return makeToken(dval, s, TokenType.FLOAT);
             }
             else {
                 val = Integer.parseInt(s,  10);
-                return makeToken(val, s, type);
+                return makeToken(val, s, TokenType.INT);
             }
         } catch (Exception e){
             throwException("Incorrect number");
@@ -340,7 +346,6 @@ public class Lexer {
                 if (res.length() == 0) {
                     res += tail;
                     val.append(tail);
-                    //throwException("Incorrect escape sequence");
                 }
                 else {
                     val.append(res);
@@ -353,7 +358,7 @@ public class Lexer {
                 tmp.append(curr);
             }
         }
-        if (getNextChar(1) == 0){
+        if (curr == 0){
             throwException("Unclosed string const");
         }
         tmp.append("\"");
@@ -424,7 +429,7 @@ public class Lexer {
             return true;
         }
  
-        if (isIn(curr, ';', ',', '.', '[', ']', '{', '}', '(', ')', '^')){
+        if (isIn(curr, ';', ',', '.', '[', ']', '{', '}', '(', ')', ':')){
             if (curr == '.' && Character.isDigit(getNextChar(1))) {
                 token = getNumber("0");
             }

@@ -1,5 +1,6 @@
-Token{value=char, text=char, type=KEY_WORD}
-Token{value=*, text=*, type=MUL}
-Token{value=c, text=c, type=VAR}
-Token{value==, text==, type=ASSIGN}
-Incorrect token on 1 line, 6 pos: Uunclosed string const
+value=char, text=char, type=KEY_WORD
+value=*, text=*, type=MUL
+value=c, text=c, type=VAR
+value==, text==, type=ASSIGN
+Incorrect token on 1 line, 11 pos: Unclosed string const
+
