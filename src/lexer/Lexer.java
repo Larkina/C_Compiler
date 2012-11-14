@@ -66,9 +66,9 @@ public class Lexer {
         str_to_type.put(">", TokenType.GT);
         str_to_type.put("<", TokenType.LT);
         str_to_type.put(":", TokenType.COLON);
+        str_to_type.put("->", TokenType.ARROW);
         
         key_words.add("break");
-        key_words.add("case");
         key_words.add("char");
         key_words.add("continue");
         key_words.add("do");
@@ -76,17 +76,11 @@ public class Lexer {
         key_words.add("else");
         key_words.add("float");
         key_words.add("for");
-        key_words.add("goto");
         key_words.add("if");
         key_words.add("int");
         key_words.add("long");
         key_words.add("return");
-        key_words.add("short");
-        key_words.add("signed");
-        key_words.add("sizeof");
         key_words.add("struct");
-        key_words.add("switch");
-        key_words.add("unsigned");
         key_words.add("void");
         key_words.add("while");
 
@@ -94,7 +88,6 @@ public class Lexer {
 
     String file_name;
     private int line = 0;
-    private int pos = 0;
     private int curr_pos = 0;
     private int p = 0;
     private int l = 0;
@@ -149,6 +142,10 @@ public class Lexer {
         return false;
     }
 
+    void setParam(int pp, int cp) {
+        p = pp;
+        curr_pos = cp;
+    }
     
     private void eatSpace(){
         while ((curr = getNextChar()) != 0){
@@ -165,7 +162,7 @@ public class Lexer {
 
     String eatComments() throws LexerException{
         while (curr == '/'){
-            if (buff.charAt(curr_pos + 1) == '/'){
+            if (getNextChar(1) == '/'){
                 ++l;
                 p = 0;
                 do {
@@ -176,7 +173,7 @@ public class Lexer {
                 }
             }
             else
-                if (buff.charAt(curr_pos + 1) == '*'){
+                if (getNextChar(1) == '*'){
                     curr_pos++;
                     p+= 2;
                     while ((curr = getNextChar()) != '*' && buff.charAt(curr_pos + 1) != '/') {
@@ -195,7 +192,7 @@ public class Lexer {
                 }
                 else
                 {
-                    if (buff.charAt(curr_pos + 1) == '=') {
+                    if (getNextChar(1) == '=') {
                         return "/=";
                     }
                     else {
@@ -212,8 +209,6 @@ public class Lexer {
 
     Token getIdent() {
         String s = buildStringWithCh();
-        line = l;
-        pos = curr_pos;
         TokenType type = TokenType.VAR;
         if (key_words.contains(s)) {
             type = TokenType.KEY_WORD;
@@ -230,8 +225,6 @@ public class Lexer {
         catch (Exception e){
             throwException("Incorrect hex nubmer");
         }
-        line = l;
-        pos = curr_pos;
         p += tmp.length() + 1;
         return makeToken(val, tmp, TokenType.INT);
     }
@@ -249,18 +242,16 @@ public class Lexer {
         catch (Exception e){
             throwException("Incorrect oct number");
         }
-        line = l;
-        pos = curr_pos;
         p += tmp.length() + 1;
         return makeToken(val, tmp.toString(), TokenType.INT);    
     }
     
-    Token getNumber() throws LexerException{
+    Token getNumber(String ... args) throws LexerException{
         TokenType type = TokenType.INT;
         boolean was_point = false;
         boolean was_exp = false;
         boolean was_sign = false;
-        StringBuilder tmp = new StringBuilder();
+        StringBuilder tmp = new StringBuilder(args[0]);
         do {
             tmp.append(curr);
             curr = Character.toLowerCase(getNextChar());
@@ -273,11 +264,8 @@ public class Lexer {
                 }
             }
             if (curr == 'e'){
-                if (was_exp || curr_pos + 1 == buff.length()){
-                    throwException("Incorrect float number");
-                }
-                char next_ch = buff.charAt(curr_pos + 1);
-                if (next_ch != '-' && next_ch != '+' && !Character.isDigit(next_ch) || was_sign){
+                char next_ch = getNextChar();
+                if (was_exp && next_ch != '-' && next_ch != '+' && !Character.isDigit(next_ch) || was_sign){
                     throwException("Incorrect float number");
                 }
                 was_sign = isIn(curr, '+' , '-');
@@ -300,15 +288,103 @@ public class Lexer {
         } catch (Exception e){
             throwException("Incorrect number");
         }
-        line = l;
-        pos = curr_pos;
         p += tmp.length() + 1;
         return null;
     }
     
+    Token getString() throws LexerException{
+        StringBuilder tmp = new StringBuilder();
+        tmp.append('\"');
+        StringBuilder val = new StringBuilder();
+        while ((curr = getNextChar()) != '\"' && curr != 0){
+            if (curr == '\n'){
+                throwException("Unclosed string const");
+            }
+            if (curr == '\\'){
+                char tail = getNextChar();
+                String res = "";
+                if (Character.isDigit(tail)){
+                    char t; int i;
+                    for(i = 1, t = getNextChar(i); i < 3 && Character.isDigit(t); ++i) {
+                        res += t;
+                    }
+                    curr_pos += res.length();
+                    tmp.append(tail).append(res);
+                    val.append(Integer.parseInt(tail + res, 8));
+                }
+                if (tail == 'x'){
+                    char t; int i;
+                    for(i = 1, t = getNextChar(i); i < 4 && Character.isLetterOrDigit(t); ++i) {
+                        res += t;
+                    }
+                    curr_pos += res.length();
+                    tmp.append(res);
+                    val.append(Integer.parseInt(res, 16));
+                }
+                switch(tail){
+                    case '\\': {res = "\\"; break;}
+                    case '\"': {res = "\""; break; }
+                    case '\'': {res = "\'"; break; }
+                    case 'n':  {res = "\n"; break; }
+                    case 'r': {res = "\r"; break; }
+                    case 'b': {res = "\b"; break; }
+                    case 't': {res = "\t"; break; }
+                    case 'f': {res = "\f"; break; }
+                }
+                if (res.length() == 0) {
+                    res += tail;
+                    val.append(tail);
+                    //throwException("Incorrect escape sequence");
+                }
+                else {
+                    val.append('\\' + tail);
+                }
+                tmp.append(res);
+                
+            }
+            else {
+                val.append(curr);
+                tmp.append(curr);
+            }
+        }
+        if (curr_pos + 1  == buff.length()){
+            throwException("Unclosed string const");
+        }
+        tmp.append("\"");
+        curr_pos += 2;
+        p += tmp.length() + 1;
+        return makeToken(val.toString(), tmp.toString(), TokenType.STRING);    
+    }
+    
+    Token getOperation() {
+        Token tmpToken;
+        String to_str = curr + "";
+        char next_ch = getNextChar(1);
+        if (next_ch != 0){
+            String concat = "" + curr + next_ch;
+            if ((curr == '-' && next_ch == '>') || next_ch == '=') {
+                setParam(p + 2, curr_pos + 2);
+            }
+            if (next_ch == curr){
+                if (isIn(curr, '>', '<') && getNextChar(2) == '='){
+                    concat = concat + "=";
+                    setParam(p + 3, curr_pos + 3);
+                }
+                else {
+                    setParam(p + 2, curr_pos + 2);
+                }
+            }
+            tmpToken = makeToken(concat, concat, str_to_type.get(concat));
+        } 
+        else 
+        {
+            tmpToken = makeToken(to_str, to_str, str_to_type.get(to_str));
+            setParam(p + 1, curr_pos + 1);
+        }    
+        return tmpToken;
+    }
+    
     public boolean next() throws LexerException{
-        l = line;
-        curr_pos = pos;
         if (curr_pos >= buff.length()){
             token = makeToken("EOF", "EOF", TokenType.EOF);
             return false;
@@ -321,7 +397,7 @@ public class Lexer {
                     return false;
                 }
                 token = makeToken(t, t, str_to_type.get(t));
-                pos = curr_pos + t.length();
+                curr_pos += t.length();
                 return true;
             }
             eatSpace();
@@ -331,176 +407,47 @@ public class Lexer {
             token = getIdent();
             return true;
         }
-
+ 
         if (isIn(curr, ';', ',', '.', '[', ']', '{', '}', '(', ')', '^')){
-            String s = curr + "";
-            TokenType t = str_to_type.get(s);
-            token = makeToken(curr, s, t);
-            line = l;
-            pos = curr_pos + 1;
+            if (curr == '.' && Character.isDigit(getNextChar(1))) {
+                token = getNumber("0");
+            }
+            else {
+                token = makeToken(curr, curr + "", str_to_type.get(curr + ""));
+            }
+            curr_pos++;
             return true;
         }
         
         if (isIn(curr, '+', '-', '*', '%', '~', '!', '&', '|', '=', '>', '<', '^')){
-            String to_str = curr + "";
-            char next_ch = getNextChar(1);
-            if (next_ch != '0'){
-                String concat = "" + curr + next_ch;
-                if (next_ch == '='){
-                    token = makeToken(concat, concat, str_to_type.get(concat));
-                    pos = curr_pos + 2;
-                    p += 2;
-                    line = l;
-                    return true;
-                }
-                if (next_ch == curr){
-                    if (isIn(curr, '+', '-', '=', '|', '&')) {
-                        token = makeToken(concat, concat, str_to_type.get(concat));
-                        pos = curr_pos + 2;
-                        p += 2;
-                        return true;
-                    }
-                    else
-                        if (isIn(curr, '>', '<')){
-                            if (getNextChar(2) == '='){
-                                token = makeToken(concat + "=", concat + "=", str_to_type.get(concat + "="));
-                                pos = curr_pos + 3;
-                                p += 3;
-                                return true;
-                            }
-                            token = makeToken(concat, concat, str_to_type.get(concat));
-                            pos = curr_pos + 2;
-                            p += 2;
-                            return true;
-                        }
-                }
-            }
-            token = makeToken(to_str, to_str, str_to_type.get(to_str));
-            line = l;
-            pos = curr_pos + 1;
-            ++p;
+            token = getOperation();
             return true;
-       
         }
 
         if (curr == '\"'){
-            StringBuilder tmp = new StringBuilder();
-            tmp.append('\"');
-            while (curr_pos + 1  < buff.length() && buff.charAt(curr_pos + 1) != '\"'){
-                curr = buff.charAt(++curr_pos);
-                if (curr == '\n'){
-                    throwException("Unclosed string const");
-                }
-                if (curr == '\\'){
-                    if (curr_pos + 1 == buff.length())
-                        break;
-                    char tail = buff.charAt(++curr_pos);
-                    String res = "";
-                    if (Character.isDigit(tail)){
-                        if (curr_pos + 2 == buff.length()){
-                            ++curr_pos;
-                            break;
-                        }
-                        char f = buff.charAt(curr_pos + 1);
-                        char s = buff.charAt(curr_pos + 2);
-                        if (Character.isDigit(f)){
-                            res += f;
-                            curr_pos ++;
-                        }
-
-                         if (Character.isDigit(s)){
-                            res += s;
-                            curr_pos ++;
-                        }
-
-                        tmp.append(res);
-                    }
-                    if (tail == 'x'){
-                        if (curr_pos + 2 == buff.length()){
-                            ++curr_pos;
-                            break;
-                        }
-                        char f = buff.charAt(curr_pos + 1);
-                        char s = buff.charAt(curr_pos + 2);
-                        if (Character.isLetterOrDigit(f))
-                            if (Character.toLowerCase(f) > 'f'){
-                                // Плохая 16ти ричная константа
-                                throwException("Incorrect hex const");
-                            }
-                            else {
-                                res += f;
-                                curr_pos++;
-                            }
-                       if (Character.isLetterOrDigit(s))
-                            if (Character.toLowerCase(s) > 'f'){
-                                // Плохая 16ти ричная константа
-                                throwException("Incorrect hex const");
-                            }
-                            else {
-                                res += s;
-                                curr_pos++;
-                            }
-                        tmp.append(res);
-
-                    }
-                    switch(tail){
-                        case '\\': {res = "\\"; break;}
-                        case '\"': {res = "\""; break; }
-                        case '\'': {res = "\'"; break; }
-                        case 'n':  {res = "\n"; break; }
-                        case 'r': {res = "\r"; break; }
-                        case 'b': {res = "\b"; break; }
-                        case 't': {res = "\t"; break; }
-                        case 'f': {res = "\f"; break; }
-                    //    case 'a': res = "\a";
-                    //    case 'v': res = "\v";
-                    //    case '?': res = "\?";
-
-                    }
-                    if (res.length() == 0) {
-                        // Неправильная эскейп последовательность
-                        throwException("Incorrect escape sequence");
-                    }
-                    tmp.append(res);
-                }
-                else
-                    tmp.append(curr);
-            }
-            if (curr_pos + 1  == buff.length()){
-                // бросить искллючение. мы строковую константу не знакрыли
-                throwException("Unclosed string const");
-            }
-            tmp.append("\"");
-            line = l;
-            pos = curr_pos + 2;
-            p += tmp.length() + 1;
-            token = new Token<>(p + 1, l + 1, tmp.toString(), tmp.toString(), TokenType.STRING);
+            token = getString();
             return true;
         }
 
-        //Числа
        if (Character.isDigit(curr)){
-           // 8/16-ти ричные
            if (curr == '0'){
-               if (curr_pos + 1 < buff.length() &&
-                   Character.toLowerCase(buff.charAt(curr_pos + 1)) == 'x') {
+               if (Character.toLowerCase(getNextChar(1)) == 'x') {
                         token = getHexNumber();
                         return true;
                    }
                 else {
-                    if (curr_pos + 1 < buff.length() &&
-                        Character.isDigit(buff.charAt(curr_pos + 1))){
-                            token = getOctNumber();
-                            return true;
+                    if (Character.isDigit(getNextChar(1))){
+                        token = getOctNumber();
+                        return true;
                     }
                  }
             }
             token = getNumber();
             return true;
        }
-        pos = buff.length();
-        line = l;
-        token = new Token<>(p + 1, l + 1, "EOF", "EOF", TokenType.EOF);
+       
+        curr_pos = buff.length();
+        token = makeToken("EOF", "EOF", TokenType.EOF);
         return false;
     }
 
