@@ -1,4 +1,4 @@
-value=0.2, text=0.2, type=INT
-value=3.6, text=0.36e+1, type=INT
-value=0.00666, text=666e-5, type=INT
-value=1.23E7, text=123e5, type=INT
+value=0.2, text=0.2, type=FLOAT
+value=3.6, text=0.36e+1, type=FLOAT
+value=0.00666, text=666e-5, type=FLOAT
+value=1.23E7, text=123e5, type=FLOAT

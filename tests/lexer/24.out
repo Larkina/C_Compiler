@@ -1,0 +1,3 @@
+value=1.444, text=1.444, type=FLOAT
+value=10500.0, text=10.5e+3, type=FLOAT
+value=0.0, text=0.e-2, type=FLOAT

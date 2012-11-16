@@ -3,4 +3,3 @@ value=*, text=*, type=MUL
 value=c, text=c, type=VAR
 value==, text==, type=ASSIGN
 Incorrect token on 1 line, 11 pos: Unclosed string const
-

@@ -2,4 +2,3 @@ value=int, text=int, type=KEY_WORD
 value=i, text=i, type=VAR
 value==, text==, type=ASSIGN
 Incorrect token on 1 line, 9 pos: Incorrect oct number
-
