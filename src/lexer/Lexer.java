@@ -56,6 +56,8 @@ public class Lexer {
         str_to_type.put("<", TokenType.LT);
         str_to_type.put(":", TokenType.COLON);
         str_to_type.put("->", TokenType.ARROW);
+        str_to_type.put("\"", TokenType.STRING);
+        str_to_type.put("\'", TokenType.CHAR_CONST);
         
         key_words.add("break");
         key_words.add("char");
@@ -85,14 +87,11 @@ public class Lexer {
     HashSet<String> key_words = new HashSet<>();
     
     char getNextChar() throws IOException {
-        int res = -1;
-        res = in.read();
-        if (res == -1) {
+        int res = in.read();
+        if (res ==  -1){
             return 0;
         }
-        else {
-            return (char) res;
-        }
+        return (char) res;
     }
     
     char getNextChar(int idx) throws IOException{
@@ -128,13 +127,9 @@ public class Lexer {
         }
         return false;
     }
-
-    void setParam(int pp) {
-        p = pp;
-    }
     
     private void eatSpace() throws IOException{
-        while ((curr = getNextChar()) != 0){
+        while ((curr = getNextChar()) != -1){
             if (curr == '\r' && getNextChar(1) == '\n'){
                 ++l;
                 p = 0;
@@ -290,11 +285,11 @@ public class Lexer {
         return null;
     }
     
-    Token getString() throws LexerException, IOException{
+    Token getString(char arg) throws LexerException, IOException{
         StringBuilder tmp = new StringBuilder();
-        tmp.append('\"');
+        tmp.append(arg);
         StringBuilder val = new StringBuilder();
-        while ((curr = getNextChar()) != '\"' && curr != 0){
+        while ((curr = getNextChar()) != arg && curr != 0){
             if (curr == '\n'){
                 throwException("Unclosed string const");
             }
@@ -314,7 +309,12 @@ public class Lexer {
                         }
                     }
                     tmp.append("\\").append(tail).append(res);
-                    val.append((char)Integer.parseInt(tail + res, 8));
+                    try {
+                        val.append((char)Integer.parseInt(tail + res, 8));
+                    }
+                    catch (Exception e) {
+                        throwException("Bad char const");
+                    }
                     continue;
                 }
                 if (tail == 'x'){
@@ -330,7 +330,12 @@ public class Lexer {
                         }
                     }
                     tmp.append("\\x").append(res);
-                    val.append((char)Integer.parseInt(res, 16));
+                    try {
+                        val.append((char)Integer.parseInt(res, 16));
+                    }
+                    catch (Exception e) {
+                        throwException("Bad char const");
+                    }
                     continue;
                 }
                 switch(tail){
@@ -361,9 +366,13 @@ public class Lexer {
         if (curr == 0){
             throwException("Unclosed string const");
         }
-        tmp.append("\"");
+        
+        if (arg == '\'' && val.length() > 3) {
+            throwException("Incorrect char const");
+        }
+        tmp.append(arg);
         p += tmp.length() + 1;
-        return makeToken(val.toString(), tmp.toString(), TokenType.STRING);    
+        return makeToken(val.toString(), tmp.toString(), str_to_type.get(arg + ""));    
     }
     
     Token getOperation() throws IOException {
@@ -373,23 +382,23 @@ public class Lexer {
         if (next_ch != 0){
             String concat = "" + curr;
             if ((curr == '-' && next_ch == '>')||( next_ch == '=' && curr != next_ch)) {
-                setParam(p + 2);
+                p += 2;
                 concat += next_ch;
             }
             if (next_ch == curr){
                 if (isIn(curr, '>', '<') && getNextChar(2) == '='){
                     concat = concat + next_ch + "=";
-                    setParam(p + 3);
+                    p += 3;
                     getNextChar();
                 }
                 else {
-                    setParam(p + 2);
+                    p += 2;
                     concat += next_ch;
                 }
             }
             tmpToken = makeToken(concat, concat, str_to_type.get(concat));
             if (concat.equals(to_str)) {
-                setParam(p + 1);
+                ++p;
             } 
             else {
                 getNextChar();
@@ -430,7 +439,7 @@ public class Lexer {
         }
  
         if (isIn(curr, ';', ',', '.', '[', ']', '{', '}', '(', ')', ':')){
-            if (curr == '.' && Character.isDigit(getNextChar(1))) {
+            if (curr == '.' && (Character.isDigit(getNextChar(1)) || Character.toLowerCase(getNextChar(1)) == 'e')) {
                 token = getNumber("0");
             }
             else {
@@ -444,8 +453,8 @@ public class Lexer {
             return true;
         }
 
-        if (curr == '\"'){
-            token = getString();
+        if (curr == '\"' || curr == '\''){
+            token = getString(curr);
             return true;
         }
 

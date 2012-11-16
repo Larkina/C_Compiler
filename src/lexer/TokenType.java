@@ -7,6 +7,7 @@ public enum TokenType {
     AND_B, 
     ARROW, 
     ASSIGN, 
+    CHAR_CONST,
     COLON, 
     COMMA, 
     DEC, 
