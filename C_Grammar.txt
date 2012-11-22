@@ -8,19 +8,23 @@ primary-expression
     string-literal  
     ( expression )  
 
+// Левая факторизация
 postfix-expression
-    primary-expression                              
-    postfix-expression [ expression ]               
-    postfix-expression ( )                          
-    postfix-expression ( argument-expression-list ) 
-    postfix-expression . identifier                 
-    postfix-expression -> identifier                
-    postfix-expression ++                           
-    postfix-expression --
+    primary-expression postfix_f
+
+postfix_f
+    [ expression ] postfix_f
+    ( ) postfix_f
+    ( argument-expression-list ) postfix_f
+    . identifier postfix_f
+    -> identifier postfix_f
+    ++ postfix_f
+    -- postfix_f
+    e
 
 argument-expression-list
     assignment-expression
-    argument-expression-list , assignment-expression
+    assignment-expression , argument-expression-list
 
 unary-expression
     postfix-expression
@@ -42,51 +46,51 @@ cast-expression
 
 multiplicative-expression
     cast-expression
-    multiplicative-expression * cast-expression
-    multiplicative-expression / cast-expression
-    multiplicative-expression % cast-expression
+    cast-expression * multiplicative-expression 
+    cast-expression / multiplicative-expression
+    cast-expression % multiplicative-expression
 
 additive-expression
     multiplicative-expression
-    additive-expression + multiplicative-expression
-    additive-expression - multiplicative-expression
+    multiplicative-expression + additive-expression
+    multiplicative-expression - additive-expression
 
 shift-expression
     additive-expression
-    shift-expression << additive-expression
-    shift-expression << additive-expression
+    additive-expression >> shift-expression
+    additive-expression << shift-expression
 
 relational-expression
     shift-expression
-    relational-expression < shift-expression
-    relational-expression > shift-expression
-    relational-expression <= shift-expression
-    relational-expression >= shift-expression
+    shift-expression < relational-expression
+    shift-expression > relational-expression
+    shift-expression <= relational-expression
+    shift-expression >= relational-expression
 
 equality-expression
     relational-expression
-    equality-expression == relational-expression
-    equality-expression != relational-expression
+    relational-expressione == equality-expression
+    relational-expression != equality-expression 
 
 AND-expression
     equality-expression
-    AND-expression & equality-expression
+    equality-expression & AND-expression
 
 exclusive-OR-expression
     AND-expression
-    exclusive-OR-expression ^ AND-expression
+    AND-expression ^ exclusive-OR-expression
 
 inclusive-OR-expression
     exclusive-OR-expression
-    inclusive-OR-expression | exclusive-OR-expression
+    exclusive-OR-expression | inclusive-OR-expression
 
 logical-AND-expression
     inclusive-OR-expression
-    logical-AND-expression && inclusive-OR-expression
+    inclusive-OR-expression && logical-AND-expression
 
 logical-OR-expression
     logical-AND-expression
-    logical-OR-expression || logical-AND-expression
+    logical-AND-expression || logical-OR-expression
 
 conditional-expression
     logical-OR-expression
@@ -131,7 +135,7 @@ declaration-specifiers
 
 init-declarator-list
     init-declarator
-    init-declarator-list , init-declarator
+    init-declarator, init-declarator-list 
 
 init-declarator
     declarator
@@ -163,7 +167,7 @@ specifier-qualifier-list
 
 struct-declarator-list
     struct-declarator
-    struct-declarator-list , struct-declarator
+    struct-declarator , struct-declarator-list
 
 struct-declarator
     declarator
@@ -189,7 +193,6 @@ pointer
 
 parameter-type-list
     parameter-list
-    parameter-list , ...
 
 parameter-list
     parameter-declaration
