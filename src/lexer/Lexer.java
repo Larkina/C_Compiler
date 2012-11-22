@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.PushbackInputStream;
 import java.util.HashMap;
 import java.util.HashSet;
+import Utils.Util;
 
 public class Lexer {
 
@@ -58,7 +59,8 @@ public class Lexer {
         str_to_type.put("->", TokenType.ARROW);
         str_to_type.put("\"", TokenType.STRING);
         str_to_type.put("\'", TokenType.CHAR_CONST);
-        
+        str_to_type.put("?", TokenType.QUESTION);
+
         key_words.add("break");
         key_words.add("char");
         key_words.add("continue");
@@ -85,7 +87,7 @@ public class Lexer {
     Token token;
     HashMap<String, TokenType> str_to_type = new HashMap<>();
     HashSet<String> key_words = new HashSet<>();
-    
+
     char getNextChar() throws IOException {
         int res = in.read();
         if (res ==  -1){
@@ -93,14 +95,14 @@ public class Lexer {
         }
         return (char) res;
     }
-    
+
     char getNextChar(int idx) throws IOException{
         byte[] arr = new byte[idx];
         in.read(arr, 0, arr.length);
         in.unread(arr);
         return (char)arr[idx - 1];
     }
-    
+
     String buildStringWithCh() throws IOException{
         StringBuilder tmp = new StringBuilder();
         do {
@@ -110,24 +112,15 @@ public class Lexer {
         in.unread(curr);
         return tmp.toString();
     }
-    
+
     void throwException(String msg) throws LexerException {
         throw new LexerException(l + 1, p + 1, msg);
     }
-    
+
     Token makeToken(Object val, String text, TokenType type){
         return new Token<>(p + 1, l + 1, val, text, type);
     }
-    
-    public static <T> boolean isIn(T t, T... ts) {
-        for(T i: ts) { 
-            if (t.equals(i)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
+
     private void eatSpace() throws IOException{
         while ((curr = getNextChar()) != -1){
             if (curr == '\r' && getNextChar(1) == '\n'){
@@ -168,7 +161,7 @@ public class Lexer {
                         p = 0;
                     }
                     p++;
-                } 
+                }
                 p += 2;
                 if (curr == 0){
                     ++p;
@@ -187,7 +180,7 @@ public class Lexer {
             }
         return "";
     }
-    
+
     public Token getToken(){
         return token;
     }
@@ -199,9 +192,9 @@ public class Lexer {
             type = TokenType.KEY_WORD;
         }
         p += s.length();
-        return makeToken(s, s, type);       
+        return makeToken(s, s, type);
     }
-    
+
     Token getHexNumber() throws LexerException, IOException {
         String tmp = buildStringWithCh();
         Integer val = 0;
@@ -214,7 +207,7 @@ public class Lexer {
         p += tmp.length() + 1;
         return makeToken(val, tmp, TokenType.INT);
     }
-    
+
     Token getOctNumber() throws LexerException, IOException{
         StringBuilder tmp = new StringBuilder();
         do {
@@ -229,9 +222,9 @@ public class Lexer {
             throwException("Incorrect oct number");
         }
         p += tmp.length() + 1;
-        return makeToken(val, tmp.toString(), TokenType.INT);    
+        return makeToken(val, tmp.toString(), TokenType.INT);
     }
-    
+
     Token getNumber(String ... args) throws LexerException, IOException{
         boolean was_point = false;
         boolean was_exp = false;
@@ -258,18 +251,18 @@ public class Lexer {
                 if (was_exp && next_ch != '-' && next_ch != '+' && !Character.isDigit(next_ch) || was_sign){
                     throwException("Incorrect float number");
                 }
-                was_sign = isIn(curr, '+' , '-');
+                was_sign = Util.isIn(curr, '+' , '-');
                 was_exp = true;
                 tmp.append(curr);
                 curr = next_ch;
             }
 
-        } while (Character.isDigit(curr) || isIn(curr, '.', 'e', '+', '-'));
+        } while (Character.isDigit(curr) || Util.isIn(curr, '.', 'e', '+', '-'));
         in.unread(curr);
         String s = tmp.toString();
         Double dval;
         Integer val;
-        try { 
+        try {
             if (was_point || was_exp){
                 dval = Double.parseDouble(s);
                 return makeToken(dval, s, TokenType.FLOAT);
@@ -284,7 +277,7 @@ public class Lexer {
         p += tmp.length() + 1;
         return null;
     }
-    
+
     Token getString(char arg) throws LexerException, IOException{
         StringBuilder tmp = new StringBuilder();
         tmp.append(arg);
@@ -302,7 +295,7 @@ public class Lexer {
                         t = getNextChar();
                         if (Character.isDigit(t)) {
                             res += t;
-                        } 
+                        }
                         else {
                             in.unread(t);
                             break;
@@ -323,7 +316,7 @@ public class Lexer {
                         t = getNextChar();
                         if (Character.isLetterOrDigit(t)) {
                             res += t;
-                        } 
+                        }
                         else {
                             in.unread(t);
                             break;
@@ -356,7 +349,7 @@ public class Lexer {
                     val.append(res);
                 }
                 tmp.append("\\").append(tail);
-                
+
             }
             else {
                 val.append(curr);
@@ -366,15 +359,15 @@ public class Lexer {
         if (curr == 0){
             throwException("Unclosed string const");
         }
-        
+
         if (arg == '\'' && val.length() > 3) {
             throwException("Incorrect char const");
         }
         tmp.append(arg);
         p += tmp.length() + 1;
-        return makeToken(val.toString(), tmp.toString(), str_to_type.get(arg + ""));    
+        return makeToken(val.toString(), tmp.toString(), str_to_type.get(arg + ""));
     }
-    
+
     Token getOperation() throws IOException {
         Token tmpToken;
         String to_str = curr + "";
@@ -386,7 +379,7 @@ public class Lexer {
                 concat += next_ch;
             }
             if (next_ch == curr){
-                if (isIn(curr, '>', '<') && getNextChar(2) == '='){
+                if (Util.isIn(curr, '>', '<') && getNextChar(2) == '='){
                     concat = concat + next_ch + "=";
                     p += 3;
                     getNextChar();
@@ -399,25 +392,25 @@ public class Lexer {
             tmpToken = makeToken(concat, concat, str_to_type.get(concat));
             if (concat.equals(to_str)) {
                 ++p;
-            } 
+            }
             else {
                 getNextChar();
             }
-        } 
-        else 
+        }
+        else
         {
             tmpToken = makeToken(to_str, to_str, str_to_type.get(to_str));
-            
-        }    
+
+        }
         return tmpToken;
     }
-    
+
     public boolean next() throws LexerException, IOException{
         if (curr == 0){
             token = makeToken("EOF", "EOF", TokenType.EOF);
             return false;
         }
-        eatSpace();  
+        eatSpace();
         while (curr == '/'){
             String t = eatComments();
             if (!"".equals(t)){
@@ -437,8 +430,8 @@ public class Lexer {
             token = getIdent();
             return true;
         }
- 
-        if (isIn(curr, ';', ',', '.', '[', ']', '{', '}', '(', ')', ':')){
+
+        if (Util.isIn(curr, ';', ',', '.', '[', ']', '{', '}', '(', ')', ':', '?')){
             if (curr == '.' && (Character.isDigit(getNextChar(1)) || Character.toLowerCase(getNextChar(1)) == 'e')) {
                 token = getNumber("0");
             }
@@ -447,8 +440,8 @@ public class Lexer {
             }
             return true;
         }
-        
-        if (isIn(curr, '+', '-', '*', '%', '~', '!', '&', '|', '=', '>', '<', '^')){
+
+        if (Util.isIn(curr, '+', '-', '*', '%', '~', '!', '&', '|', '=', '>', '<', '^')){
             token = getOperation();
             return true;
         }
@@ -474,7 +467,7 @@ public class Lexer {
             token = getNumber();
             return true;
        }
-       
+
         curr = 0;
         token = makeToken("EOF", "EOF", TokenType.EOF);
         return false;
