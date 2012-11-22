@@ -16,13 +16,34 @@ public class Node {
         return "( " + token.getText() + " )";
     }
 
+    @Override
+    public int hashCode() {
+        return token.hashCode();
+    }
+
     public Node addChild(Node child) {
-        children.add(child);
+        if (child != null)
+            children.add(child);
+        return this;
+    }
+
+    public int getLevel() {
+        return lvl;
+    }
+
+    public ArrayList<Node> getChildren() {
+        return children;
+    }
+
+    public Node incLevel() {
+        lvl++;
+        for(Node i: children)
+            i.incLevel();
         return this;
     }
 
     Token token;
     int lvl = 0;
     int height = 0;
-    ArrayList children = new ArrayList();
+    ArrayList<Node> children = new ArrayList();
 }

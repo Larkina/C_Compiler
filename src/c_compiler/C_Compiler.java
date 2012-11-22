@@ -6,15 +6,20 @@ import java.io.IOException;
 import lexer.Lexer;
 import lexer.LexerException;
 import parser.*;
+import Utils.*;
 
 public class C_Compiler {
 
-    public static void main(String[] args) throws FileNotFoundException, IOException {
+    public static void main(String[] args) throws Exception {
 
-        /*String tests = System.getProperty("user.dir") + "\\tests\\lexer\\";
-        String t_n = "30.in";
-        Lexer l = new Lexer(tests + t_n); */
-
+        String tests = System.getProperty("user.dir") + "\\tests\\parser\\expr\\";
+        String t_n = "07.in";
+        Lexer ll = new Lexer(tests + t_n);
+        Parser pp = new Parser(ll);
+        Node nn = pp.parse();
+        Util.drawSymanticTree(nn);
+        if (true)
+            return;
        if (args.length == 0){
              System.out.println(" Simple C Compiler S8303a Larkina O.S. 2012.");
              System.out.println("Usage: java -jar C_compiler.java filename");
