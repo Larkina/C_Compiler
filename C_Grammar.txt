@@ -245,7 +245,6 @@ statement
     selection-statement
     iteration-statement
     jump-statement
-    e
 
 compound-statement
     { }
@@ -268,7 +267,6 @@ expression-statement
 selection-statement
     if ( expression ) statement
     if ( expression ) statement else statement
-    switch ( expression ) statement
 
 iteration-statement
     while ( expression ) statement
