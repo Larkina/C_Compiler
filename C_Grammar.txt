@@ -98,7 +98,7 @@ conditional-expression
 
 assignment-expression
     conditional-expression
-    unary-expression assignment-operator assignment-expression
+    conditional-expression assignment-operator assignment-expression
 
 assignment-operator
     =
@@ -130,8 +130,7 @@ declaration
 
 declaration-specifiers
     type-specifier
-    storage-class-specifier declaration-specifiers
-    type-specifier          declaration-specifiers
+    type-specifier  declaration-specifiers
 
 init-declarator-list
     init-declarator
@@ -241,15 +240,12 @@ initializer-list
 #
 
 statement
-    labeled-statement
     compound-statement
     expression-statement
     selection-statement
     iteration-statement
     jump-statement
-
-labeled-statement
-    identifier : statement
+    e
 
 compound-statement
     { }
