@@ -13,10 +13,10 @@ public class C_Compiler {
     public static void main(String[] args) throws Exception {
 
         String tests = System.getProperty("user.dir") + "\\tests\\parser\\expr\\";
-        String t_n = "07.in";
+        String t_n = "11.in";
         Lexer ll = new Lexer(tests + t_n);
         Parser pp = new Parser(ll);
-        Node nn = pp.parse();
+         Node nn = pp.parse();
         Util.drawSymanticTree(nn);
         if (true)
             return;

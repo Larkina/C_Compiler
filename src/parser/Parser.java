@@ -1,6 +1,8 @@
 package parser;
 
 import Utils.Util;
+import java.util.LinkedList;
+import java.util.Queue;
 import lexer.Lexer;
 import lexer.Token;
 import lexer.TokenType;
@@ -14,27 +16,19 @@ public class Parser {
     }
 
     boolean buf = false;
-    Token prev;
+    Queue<Token> q = new LinkedList<>();
 
     void next() throws Exception {
-        if (!buf)
-            lex.next();
-        else
-            buf = true;
+        lex.next();
+        q.add(lex.getToken());
     }
 
     Token getToken() {
-        if (buf) {
-            return prev;
-        }
-        else {
-            return lex.getToken();
-        }
+        return q.peek();
     }
 
-    void backToken() {
-        prev = lex.getToken();
-        buf = true;
+    void popToken() {
+        q.poll();
     }
 
 
@@ -51,23 +45,27 @@ public class Parser {
     }
 
     Node parsePrimaryExpr(int lvl) throws Exception {
-       // next();
-        TokenType type = lex.getToken().getType();
+         next();
+         TokenType type = getToken().getType();
         switch (type) {
             case L_PARENTHESIS: {
-                Node l_node = parseExpr(lvl + 1);
+                popToken();
+                Node l_node = parseExpr(lvl);
                 next();
-                if (lex.getToken().getType() != TokenType.R_PARENTHESIS) {
-                 //   throw new ParserException(lex.getToken(), "Unclosed parenthesis");
+                if (getToken().getType() != TokenType.R_PARENTHESIS) {
+                    throw new ParserException(getToken(), "Unclosed parenthesis");
                 }
-                return new Node(lvl, lex.getToken()).addChild(l_node);
+                popToken();
+                return l_node;
             }
             case VAR: case CHAR_CONST: case STRING: case INT: case FLOAT: {
-                return new Node(lvl, lex.getToken());
+               Token t = getToken();
+                popToken();
+                return new Node(lvl, t);
             }
             default: {
-                return null;
-                //throw new ParserException(lex.getToken(), "Excpected primary expr");
+//                return null;
+                throw new ParserException(getToken(), "Excpected primary expr");
             }
         }
 
@@ -76,57 +74,69 @@ public class Parser {
     Node parseArgumentExprtList(int lvl) throws Exception {
         Node l_node = parseAssignExpr(lvl);
         next();
-        if (lex.getToken().getType() == TokenType.COMMA) {
+        if (getToken().getType() == TokenType.COMMA) {
             Node r_node = parseArgumentExprtList(lvl + 1);
-            return new Node(lvl, lex.getToken()).addChild(l_node.incLevel()).addChild(r_node);
+            popToken();
+            return new Node(lvl, getToken()).addChild(l_node.incLevel()).addChild(r_node);
         }
         return l_node;
     }
 
     Node parsePostfixFactorized(int lvl) throws Exception {
-        TokenType type = lex.getToken().getType();
+        TokenType type = getToken().getType();
         switch (type) {
             case L_BRAKET: {
+                popToken();
                 Node l_node = parseExpr(lvl + 1);
                 next();
-                if (lex.getToken().getType() == TokenType.R_BRAKET) {
-                    next();
+                if (getToken().getType() == TokenType.R_BRAKET) {
+                    Token t = getToken();
+                    popToken();
                     Node r_node = parsePostfixFactorized(lvl + 1);
-                    return new Node(lvl, lex.getToken());
+                    return new Node(lvl, t).addChild(l_node).addChild(r_node);
                 }
                 else {
                     throw new ParserException(lex.getToken(), "Unclosed braket");
                 }
             }
             case L_PARENTHESIS: {
+                popToken();
                 next();
                 Node l_node, r_node;
-                if (lex.getToken().getType() != TokenType.R_PARENTHESIS) {
+                if (getToken().getType() != TokenType.R_PARENTHESIS) {
                     l_node = parseArgumentExprtList(lvl + 1);
                     next();
-                    if (lex.getToken().getType() == TokenType.R_PARENTHESIS) {
-                        r_node = parsePostfixFactorized(lvl + 1);
-                        return new Node(lvl, lex.getToken()).addChild(l_node).addChild(r_node);
+                    if (getToken().getType() == TokenType.R_PARENTHESIS) {
+                        Token t = getToken();
+                        r_node = parsePostfixExpr(lvl + 1);
+                        popToken();
+                        return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
                     }
                     else {
-                        throw new ParserException(lex.getToken(), "Unclosed parenthesis");
+                        throw new ParserException(getToken(), "Unclosed parenthesis");
                     }
                 }
                 else {
-                    return new Node(lvl, lex.getToken()).addChild(parsePostfixFactorized(lvl + 1));
+                    Token t = getToken();
+                    popToken();
+                    return new Node(lvl, t).addChild(parsePostfixExpr(lvl + 1));
                 }
             }
             case POINT: case ARROW: {
+                popToken();
                 next();
-                if (lex.getToken().getType() == TokenType.VAR) {
-                    return new Node(lvl, lex.getToken()).addChild(parsePostfixFactorized(lvl + 1));
+                if (getToken().getType() == TokenType.VAR) {
+                    Token t = getToken();
+                    //popToken();
+                    return parsePostfixExpr(lvl);
                 }
                 else {
-                    throw new ParserException(lex.getToken(), "Expected identifier");
-                }
+                    throw new ParserException(getToken(), "Expected identifier");
+                } 
             }
             case INC: case DEC: {
-                return new Node(lvl, lex.getToken()).addChild(parsePostfixFactorized(lvl + 1));
+                popToken();
+                return new Node(lvl, getToken()).addChild(parsePostfixExpr(lvl + 1));
             }
         }
         return null;
@@ -134,11 +144,12 @@ public class Parser {
 
     Node parsePostfixExpr(int lvl) throws Exception {
         Node l_node = parsePrimaryExpr(lvl);
-        //next();
-        if (Util.isIn(lex.getToken().getType(), TokenType.L_BRAKET, TokenType.L_PARENTHESIS,
+        next();
+        if (Util.isIn(getToken().getType(), TokenType.L_BRAKET, TokenType.L_PARENTHESIS,
                 TokenType.POINT, TokenType.ARROW, TokenType.INC, TokenType.DEC)) {
+            Token t = getToken();
             Node r_node = parsePostfixFactorized(lvl + 1);
-            return new Node(lvl, lex.getToken()).addChild(l_node.incLevel()).addChild(r_node);
+            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
         }
         return l_node;
     }
@@ -161,11 +172,15 @@ public class Parser {
 
     Node parseUnaryExpr(int lvl) throws Exception {
         next();
-        if (isUnaryOp(lex.getToken().getType())) {
-           return new Node(lvl, lex.getToken()).addChild(parseCastExpr(lvl + 1));
+        if (isUnaryOp(getToken().getType())) {
+            Token t = getToken();
+            popToken();
+           return new Node(lvl, t).addChild(parseCastExpr(lvl + 1));
         } else
-            if (Util.isIn(lex.getToken().getType(), TokenType.DEC, TokenType.INC)) {
-                return new Node(lvl, lex.getToken()).addChild(parseUnaryExpr(lvl + 1));
+            if (Util.isIn(getToken().getType(), TokenType.DEC, TokenType.INC)) {
+                Token t = getToken();
+                popToken();
+                return new Node(lvl, t).addChild(parseUnaryExpr(lvl + 1));
             }
             else {
                 return parsePostfixExpr(lvl);
@@ -174,158 +189,239 @@ public class Parser {
 
     Node parseMultiplicativeExpr(int lvl) throws Exception {
         Node l_node = parseCastExpr(lvl);
-        //next();
-        if (Util.isIn(lex.getToken().getType(), TokenType.MUL, TokenType.DIV, TokenType.MOD)) {
+        next();
+        if (Util.isIn(getToken().getType(), TokenType.MUL, TokenType.DIV, TokenType.MOD)) {
+            Token t = getToken();
+            popToken();
             Node r_node = parseMultiplicativeExpr(lvl + 1);
-            return new Node(lvl, lex.getToken()).addChild(l_node.incLevel()).addChild(r_node);
+            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
         }
         return l_node;
     }
 
     Node parseAdditiveExpr(int lvl) throws Exception{
         Node l_node = parseMultiplicativeExpr(lvl);
-      //  next();
-        if (Util.isIn(lex.getToken().getType(), TokenType.PLUS, TokenType.MINUS)) {
+        next();
+        if (Util.isIn(getToken().getType(), TokenType.PLUS, TokenType.MINUS)) {
+            Token t = getToken();
+            popToken();
             Node r_node = parseAdditiveExpr(lvl + 1);
-            return new Node(lvl, lex.getToken()).addChild(l_node.incLevel()).addChild(r_node);
+            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
         }
         return l_node;
     }
 
     Node parseShiftExpr(int lvl) throws Exception {
         Node l_node = parseAdditiveExpr(lvl);
-     //   next();
-        if (Util.isIn(lex.getToken().getType(), TokenType.SHL, TokenType.SHR)) {
+        next();
+        if (Util.isIn(getToken().getType(), TokenType.SHL, TokenType.SHR)) {
+            Token t = getToken();
+            popToken();
             Node r_node = parseShiftExpr(lvl + 1);
-            return new Node(lvl, lex.getToken()).addChild(l_node.incLevel()).addChild(r_node);
+            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
         }
         return l_node;
     }
 
     Node parseRelExpr(int lvl) throws Exception {
         Node l_node = parseShiftExpr(lvl);
-      //  next();
-        if (Util.isIn(lex.getToken().getType(), TokenType.LE, TokenType.LT, TokenType.GE, TokenType.GT)) {
+        next();
+        if (Util.isIn(getToken().getType(), TokenType.LE, TokenType.LT, TokenType.GE, TokenType.GT)) {
+            Token t = getToken();
+            popToken();
             Node r_node = parseRelExpr(lvl + 1);
-            return new Node(lvl, lex.getToken()).addChild(l_node.incLevel()).addChild(r_node);
+            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
         }
         return l_node;
     }
 
     Node parseEqExpr(int lvl) throws Exception {
         Node l_node = parseRelExpr(lvl);
-     //   next();
-        if (Util.isIn(lex.getToken().getType(), TokenType.EQ, TokenType.NE)) {
+        next();
+        if (Util.isIn(getToken().getType(), TokenType.EQ, TokenType.NE)) {
+            Token t = getToken();
+            popToken();
             Node r_node = parseEqExpr(lvl + 1);
-            return new Node(lvl, lex.getToken()).addChild(l_node.incLevel()).addChild(r_node);
+            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
         }
         return l_node;
     }
 
     Node parseAndExpr(int lvl) throws Exception {
         Node l_node = parseEqExpr(lvl);
-    //    next();
-        if (lex.getToken().getType() == TokenType.AND_B) {
+        next();
+        if (getToken().getType() == TokenType.AND_B) {
+            Token t = getToken();
+            popToken();
             Node r_node = parseAndExpr(lvl + 1);
-            return new Node(lvl, lex.getToken()).addChild(l_node.incLevel()).addChild(r_node);
+            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
         }
         return l_node;
     }
 
     Node parseExclusiveOrExpr(int lvl) throws Exception {
         Node l_node = parseAndExpr(lvl);
-      //  next();
-        if (lex.getToken().getType() == TokenType.XOR) {
+        next();
+        if (getToken().getType() == TokenType.XOR) {
+            Token t = getToken();
+            popToken();
             Node r_node = parseExclusiveOrExpr(lvl + 1);
-            return new Node(lvl, lex.getToken()).addChild(l_node.incLevel()).addChild(r_node);
+            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
         }
         return l_node;
     }
 
     Node parseInclusiveOrExpr(int lvl) throws Exception{
         Node l_node = parseExclusiveOrExpr(lvl);
-     //   next();
-        if (lex.getToken().getType() == TokenType.OR_B) {
+        next();
+        if (getToken().getType() == TokenType.OR_B) {
+            Token t = getToken();
+            popToken();
             Node r_node = parseInclusiveOrExpr(lvl + 1);
-            return new Node(lvl, lex.getToken()).addChild(l_node.incLevel()).addChild(r_node);
+            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
         }
         return l_node;
     }
 
     Node parseLogicalAndExpr(int lvl)throws Exception {
         Node l_node = parseInclusiveOrExpr(lvl);
-    //    next();
-        if (lex.getToken().getType() == TokenType.AND) {
+        next();
+        if (getToken().getType() == TokenType.AND) {
+            Token t = getToken();
+            popToken();
             Node r_node = parseLogicalAndExpr(lvl + 1);
-            return new Node(lvl, lex.getToken()).addChild(l_node.incLevel()).addChild(r_node);
+            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
         }
         return l_node;
     }
 
     Node parseLogicalOrExpr(int lvl) throws Exception {
         Node l_node = parseLogicalAndExpr(lvl);
-  //      next();
-        if (lex.getToken().getType() == TokenType.OR) {
+        next();
+        if (getToken().getType() == TokenType.OR) {
+            Token t = getToken();
+            popToken();
             Node r_node = parseLogicalOrExpr(lvl + 1);
-            return new Node(lvl, lex.getToken()).addChild(l_node.incLevel()).addChild(r_node);
+            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
         }
         return l_node;
     }
 
     Node parseConditionalExpr(int lvl) throws Exception {
         Node l_node = parseLogicalOrExpr(lvl);
-    //    next();
-        if (lex.getToken().getType() == TokenType.QUESTION) {
+        next();
+        if (getToken().getType() == TokenType.QUESTION) {
             Node middle, end;
+            Token t = getToken();
+            popToken();
             middle = parseExpr(lvl + 2);
-            Node res = new Node(lvl, lex.getToken());
+            Node res = new Node(lvl, t);
             next();
-            if (lex.getToken().getType() == TokenType.COLON) {
+            Token c = getToken();
+            if (getToken().getType() == TokenType.COLON) {
+                popToken();
                 end = parseConditionalExpr(lvl + 2);
             }
             else {
-                throw new ParserException(lex.getToken(), "Bad ternary operator");
+                throw new ParserException(getToken(), "Bad ternary operator");
             }
-            res.addChild(l_node.incLevel()).addChild(new Node(lvl + 1, lex.getToken()).addChild(middle).addChild(end));
+            res.addChild(l_node.incLevel()).addChild(new Node(lvl + 1, c).addChild(middle).addChild(end));
             return res;
         }
         return l_node;
     }
-
+    
     Node parseAssignExpr(int lvl) throws Exception {
-        Node l_node = parseConditionalExpr(lvl);
+        Node l_node = parseConditionalExpr(lvl);       
         Node r_node = null;
-        Token curr_tok = lex.getToken();
-      //  if (l_node == null) {
-      //      l_node = parseUnaryExpr(lvl + 1);
-            next();
-            if (isAssigmentOp(lex.getToken().getType())) {
-                curr_tok = lex.getToken();
-                r_node = parseAssignExpr(lvl + 1);
-            }
-            else {
-          //      throw new ParserException(lex.getToken(), "Excpected assigment operator");
-            }
-            if (r_node != null) {
-                return new Node(lvl, curr_tok).addChild(l_node.incLevel()).addChild(r_node);
-            }
-            else
-                return l_node;
+        Token curr_tok = getToken();
+        next();
+        if (isAssigmentOp(getToken().getType())) {
+            curr_tok = getToken();
+            popToken();
+            r_node = parseConditionalExpr(lvl + 1);
+        }
+        if (r_node != null) {
+            return new Node(lvl, curr_tok).addChild(l_node.incLevel()).addChild(r_node);
+        }
+        else {
+            return l_node;
+        }
 //        }
-//        return l_node;
     }
 
     Node parseExpr(int lvl) throws Exception {
         Node l_node = parseAssignExpr(lvl);
-    //    next();
-        if (lex.getToken().getType() == TokenType.COMMA) {
-            Token curr = lex.getToken();
+        next();
+        if (getToken().getType() == TokenType.COMMA) {
+            Token curr = getToken();
+            popToken();
             Node r_node = parseExpr(lvl + 1);
             return new Node(lvl, curr).addChild(l_node.incLevel()).addChild(r_node);
         }
         return l_node;
     }
 
+    /*void delaration(int lvl) throws Exception {
+        Node l_node = declarationSpec(lvl);
+        next();
+        if (getToken().getType() == TokenType.SEMICOLON) {
+            popToken();
+            return l_node;
+        }
+        Node r_node = initDeclList(lvl + 1);
+        next();
+        if (getToken().getType() == TokenType.SEMICOLON) {
+            popToken();
+        } else {
+            throw new ParserException(getToken(), "Forgot ;");
+        }
+        //
+    }*/
+    
+    Node jmpStatement(int lvl) throws Exception{
+        next();
+        if (Util.isIn(getToken().getText(), "continue", "break")) {
+            popToken();
+            next();
+            if (getToken().getType() != TokenType.SEMICOLON) {
+                throw new ParserException(getToken(), "Forgot ;");
+            }
+            else {
+                return new Node(lvl, getToken());
+            }
+        }
+        if (getToken().getText() == "return") {
+            popToken();
+            next();
+            if (getToken().getType() == TokenType.SEMICOLON) {
+                return new Node(lvl, getToken());
+            }
+            Node l_node = parseExpr(lvl + 1);
+            Token c = getToken();
+            next();
+            if (getToken().getType() != TokenType.SEMICOLON) {
+                throw new ParserException(getToken(), "Forgot ;");
+            }
+            return new Node(lvl, c).addChild(l_node);
+        }
+        return null;
+    }
+    
+    Node compoundStatement(int lvl) throws Exception {
+        next();
+        if (getToken().getType() == TokenType.L_PARENTHESIS) {
+            popToken();
+            next();
+            Token curr = getToken();
+            if (curr.getType() == TokenType.R_PARENTHESIS) {
+                return null;
+            }
+            
+        }
+        return null;
+    }
+    
     public Node parse() throws Exception {
         return parseExpr(0);
     }
