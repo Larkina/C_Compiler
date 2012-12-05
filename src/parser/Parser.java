@@ -31,6 +31,19 @@ public class Parser {
         q.poll();
     }
 
+    TokenType getType() {
+        return getToken().getType();
+    }
+    
+    void eatToken(TokenType type, Token tok, String error_msg) throws Exception{
+        next();
+        if (getToken().getType() == type) {
+            popToken();
+        }
+        else {
+            throw new ParserException(tok, error_msg);
+        }
+    }
 
     boolean isUnaryOp(TokenType t) {
         return Util.isIn(t, TokenType.AND_B, TokenType.MUL, TokenType.PLUS,
@@ -420,6 +433,31 @@ public class Parser {
             
         }
         return null;
+    }
+    
+    Node exprStatement(int lvl) throws Exception {
+        next();
+        if (getToken().getType() == TokenType.SEMICOLON) {
+            popToken();
+            return null;
+        }
+        Node l_node = parseExpr(lvl);
+        next();
+        if (getToken().getType() == TokenType.SEMICOLON) {
+            popToken();
+            return l_node;
+        }
+        else {
+            throw new ParserException(getToken(), "Frogot ;");
+        }
+    }
+    
+    Node selectionSatement(int lvl) throws Exception {
+        next();
+        if (getToken().getText() == "if") {
+            popToken();
+            eatToken(getToken(), "Excpected (");
+        }
     }
     
     public Node parse() throws Exception {
