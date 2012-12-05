@@ -257,7 +257,7 @@ public class Lexer {
                 curr = next_ch;
             }
 
-        } while (Character.isDigit(curr) || Util.isIn(curr, '.', 'e', '+', '-'));
+        } while (Character.isDigit(curr) || was_exp || (was_exp && Util.isIn(curr, '+', '-')));
         in.unread(curr);
         String s = tmp.toString();
         Double dval;
