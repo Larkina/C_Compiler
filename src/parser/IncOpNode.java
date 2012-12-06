@@ -9,4 +9,9 @@ public class IncOpNode extends UnaryOpNode{
         super(lvl, token, arg);
     }
 
+    @Override
+    public String toString() {
+        return "( left " + token.getText() + " )\n" + arg.toString();
+    }   
+    
 }

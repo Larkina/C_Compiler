@@ -127,8 +127,9 @@ public class Parser {
                     Token t = getToken();
                     popToken();
                     Node res = new ArgExprListNode(lvl, t, left, null);
-                    r_node =  parsePostfixFactorized(lvl + 1, res);
+                    r_node =  parsePostfixFactorized(lvl, res);
                     if (r_node != null) {
+                        res.incLevel();
                         return r_node;
                     }
                     return res;
@@ -141,16 +142,23 @@ public class Parser {
                 eatToken(TokenType.VAR, "Expected identifier");
                 Node l_node = new Node(lvl + 1, arg);
                 Node res = new MemberOpNode(lvl, t, left, l_node);
-                Node r_node = parsePostfixFactorized(lvl + 1, res); 
+                Node r_node = parsePostfixFactorized(lvl, res); 
                 if (r_node != null) {
+                    res.incLevel();
                     return r_node;
                 }
                 return res;
             }
             case INC: case DEC: {
                 Token t = getToken();
+                Node res = new PostfixOpNode(lvl, t, left);
                 popToken();
-                return new Node(lvl, t).addChild(parsePostfixFactorized(lvl + 1, left));
+                Node r_node = parsePostfixFactorized(lvl, res);
+                if (r_node != null ){
+                    res.incLevel();
+                    return r_node;
+                }
+                return res;
             }
         }
         return null;
@@ -332,14 +340,8 @@ public class Parser {
             Token t = getToken();
             popToken();
             middle = parseExpr(lvl + 1);
-            next();
-            if (getType() == TokenType.COLON) {
-                popToken();
-                end = parseConditionalExpr(lvl + 1);
-            }
-            else {
-                throw new ParserException(getToken(), "Bad ternary operator");
-            }
+            eatToken(TokenType.COLON, "Expected colon");
+            end = parseConditionalExpr(lvl + 1);
             return new TernaryOpNode(lvl, t, l_node.incLevel(), middle, end);
         }
         return l_node;

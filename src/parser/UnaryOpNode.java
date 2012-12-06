@@ -11,5 +11,16 @@ public class UnaryOpNode extends Node{
         super(lvl, token);
         this.arg = arg;
     }
+
+    @Override
+    public String toString() {
+        return super.toString() + arg.toString();
+    }
     
+    @Override
+    public Node incLevel(){
+        super.incLevel();
+        arg.incLevel();
+        return this;
+    }
 }

@@ -13,10 +13,11 @@ public class C_Compiler {
     public static void main(String[] args) throws Exception {
 
         String tests = System.getProperty("user.dir") + "\\tests\\parser\\expr\\";
-        String t_n = "12.in";
+        String t_n = "30.in";
+        try {
         Lexer ll = new Lexer(tests + t_n);
         Parser pp = new Parser(ll);
-         Node nn = pp.parse();
+        Node nn = pp.parse();
         Util.drawSymantecTree(nn);
         if (true)
             return;
@@ -25,7 +26,7 @@ public class C_Compiler {
              System.out.println("Usage: java -jar C_compiler.java filename");
              return;
            }
-       try {
+       
             if (args.length == 2) {
                 if (args[0] == "-l") {
                         Lexer l = new Lexer(args[1]);
