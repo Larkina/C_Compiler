@@ -2,6 +2,7 @@
 package parser;
 
 import java.util.ArrayList;
+import java.util.Objects;
 import lexer.Token;
 
 public class Node {
@@ -11,9 +12,17 @@ public class Node {
         this.token = token;
     }
 
+    String getSpace() {
+        String res = "";
+        for(int i = 0; i < lvl; ++i) {
+            res += "\t";
+        }
+        return res;
+    }
+    
     @Override
     public String toString() {
-        return "( " + token.getText() + " )";
+        return getSpace() + "( " + token.getText() + " )\n";
     }
 
     @Override
@@ -21,9 +30,28 @@ public class Node {
         return token.hashCode();
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Node other = (Node) obj;
+        if (!Objects.equals(this.token, other.token)) {
+            return false;
+        }
+        if (this.lvl != other.lvl) {
+            return false;
+        }
+        return true;
+    }
+
     public Node addChild(Node child) {
-        if (child != null)
+        if (child != null) { 
             children.add(child);
+        }
         return this;
     }
 
@@ -37,8 +65,9 @@ public class Node {
 
     public Node incLevel() {
         lvl++;
-        for(Node i: children)
+        for(Node i: children) {
             i.incLevel();
+        }
         return this;
     }
 

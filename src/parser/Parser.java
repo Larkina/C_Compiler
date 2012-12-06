@@ -37,7 +37,7 @@ public class Parser {
     
     void eatToken(TokenType type, String error_msg) throws Exception{
         next();
-        if (getToken().getType() == type) {
+        if (getType() == type) {
             popToken();
         }
         else {
@@ -59,7 +59,7 @@ public class Parser {
 
     Node parsePrimaryExpr(int lvl) throws Exception {
          next();
-         TokenType type = getToken().getType();
+         TokenType type = getType();
         switch (type) {
             case L_PARENTHESIS: {
                 popToken();
@@ -82,7 +82,7 @@ public class Parser {
     Node parseArgumentExprtList(int lvl) throws Exception {
         Node l_node = parseAssignExpr(lvl);
         next();
-        if (getToken().getType() == TokenType.COMMA) {
+        if (getType() == TokenType.COMMA) {
             Node r_node = parseArgumentExprtList(lvl + 1);
             popToken();
             return new Node(lvl, getToken()).addChild(l_node.incLevel()).addChild(r_node);
@@ -91,7 +91,7 @@ public class Parser {
     }
 
     Node parsePostfixFactorized(int lvl) throws Exception {
-        TokenType type = getToken().getType();
+        TokenType type = getType();
         switch (type) {
             case L_BRAKET: {
                 popToken();
@@ -105,7 +105,7 @@ public class Parser {
                 popToken();
                 next();
                 Node l_node, r_node;
-                if (getToken().getType() != TokenType.R_PARENTHESIS) {
+                if (getType() != TokenType.R_PARENTHESIS) {
                     l_node = parseArgumentExprtList(lvl + 1);
                     eatToken(TokenType.R_PARENTHESIS, "Unclosed parenthesis");
                     next();
@@ -136,42 +136,45 @@ public class Parser {
     Node parsePostfixExpr(int lvl) throws Exception {
         Node l_node = parsePrimaryExpr(lvl);
         next();
-        if (Util.isIn(getToken().getType(), TokenType.L_BRAKET, TokenType.L_PARENTHESIS,
+        if (Util.isIn(getType(), TokenType.L_BRAKET, TokenType.L_PARENTHESIS,
                 TokenType.POINT, TokenType.ARROW, TokenType.INC, TokenType.DEC)) {
             Token t = getToken();
             Node r_node = parsePostfixFactorized(lvl + 1);
-            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
+            return new PostfixOpNode(lvl, t, l_node.incLevel(), r_node);
         }
         return l_node;
     }
-
+    
+    Node parseTypeName(int lvl) {
+        //Todo: decl
+        return null;
+    }
+    
     Node parseCastExpr(int lvl) throws Exception{
-        return parseUnaryExpr(lvl);
-        // Спросить про каст нормальный
-      /*  next();
-        if (lex.getToken().getType() == TokenType.L_PARENTHESIS) {
-            parseTypeName();
-            next();
-            if (lex.getToken().getType() == TokenType.R_PARENTHESIS) {
-                parseCastExpr();
-            }
-            else {
-                throw new ParserException(lex.getToken(), "Unclosed parenthesis");
-            }
-        } */
+        next();
+        if (getType() == TokenType.L_PARENTHESIS) {
+            popToken();
+            parseTypeName(lvl + 1);
+            eatToken(TokenType.R_PARENTHESIS, "Unclosed parenthesis");
+            parseCastExpr(lvl + 1);
+            return null;
+        } 
+        else {
+            return parseUnaryExpr(lvl);    
+        }
     }
 
     Node parseUnaryExpr(int lvl) throws Exception {
         next();
-        if (isUnaryOp(getToken().getType())) {
+        if (isUnaryOp(getType())) {
             Token t = getToken();
             popToken();
-           return new Node(lvl, t).addChild(parseCastExpr(lvl + 1));
+            return new UnaryOpNode(lvl, t, parseCastExpr(lvl + 1));
         } else
-            if (Util.isIn(getToken().getType(), TokenType.DEC, TokenType.INC)) {
+            if (Util.isIn(getType(), TokenType.DEC, TokenType.INC)) {
                 Token t = getToken();
                 popToken();
-                return new Node(lvl, t).addChild(parseUnaryExpr(lvl + 1));
+                return new IncOpNode(lvl, t, parseUnaryExpr(lvl + 1));
             }
             else {
                 return parsePostfixExpr(lvl);
@@ -181,11 +184,11 @@ public class Parser {
     Node parseMultiplicativeExpr(int lvl) throws Exception {
         Node l_node = parseCastExpr(lvl);
         next();
-        if (Util.isIn(getToken().getType(), TokenType.MUL, TokenType.DIV, TokenType.MOD)) {
+        if (Util.isIn(getType(), TokenType.MUL, TokenType.DIV, TokenType.MOD)) {
             Token t = getToken();
             popToken();
             Node r_node = parseMultiplicativeExpr(lvl + 1);
-            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
+            return new MulOpNode(lvl, t, l_node.incLevel(), r_node);
         }
         return l_node;
     }
@@ -193,11 +196,11 @@ public class Parser {
     Node parseAdditiveExpr(int lvl) throws Exception{
         Node l_node = parseMultiplicativeExpr(lvl);
         next();
-        if (Util.isIn(getToken().getType(), TokenType.PLUS, TokenType.MINUS)) {
+        if (Util.isIn(getType(), TokenType.PLUS, TokenType.MINUS)) {
             Token t = getToken();
             popToken();
             Node r_node = parseAdditiveExpr(lvl + 1);
-            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
+            return new AddOpNode(lvl, t, l_node.incLevel(), r_node);
         }
         return l_node;
     }
@@ -205,11 +208,11 @@ public class Parser {
     Node parseShiftExpr(int lvl) throws Exception {
         Node l_node = parseAdditiveExpr(lvl);
         next();
-        if (Util.isIn(getToken().getType(), TokenType.SHL, TokenType.SHR)) {
+        if (Util.isIn(getType(), TokenType.SHL, TokenType.SHR)) {
             Token t = getToken();
             popToken();
             Node r_node = parseShiftExpr(lvl + 1);
-            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
+            return new ShiftOpNode(lvl, t, l_node.incLevel(), r_node);
         }
         return l_node;
     }
@@ -217,11 +220,11 @@ public class Parser {
     Node parseRelExpr(int lvl) throws Exception {
         Node l_node = parseShiftExpr(lvl);
         next();
-        if (Util.isIn(getToken().getType(), TokenType.LE, TokenType.LT, TokenType.GE, TokenType.GT)) {
+        if (Util.isIn(getType(), TokenType.LE, TokenType.LT, TokenType.GE, TokenType.GT)) {
             Token t = getToken();
             popToken();
             Node r_node = parseRelExpr(lvl + 1);
-            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
+            return new RelOpNode(lvl, t, l_node.incLevel(), r_node);
         }
         return l_node;
     }
@@ -229,11 +232,11 @@ public class Parser {
     Node parseEqExpr(int lvl) throws Exception {
         Node l_node = parseRelExpr(lvl);
         next();
-        if (Util.isIn(getToken().getType(), TokenType.EQ, TokenType.NE)) {
+        if (Util.isIn(getType(), TokenType.EQ, TokenType.NE)) {
             Token t = getToken();
             popToken();
             Node r_node = parseEqExpr(lvl + 1);
-            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
+            return new EqNode(lvl, t, l_node.incLevel(), r_node);
         }
         return l_node;
     }
@@ -241,11 +244,11 @@ public class Parser {
     Node parseAndExpr(int lvl) throws Exception {
         Node l_node = parseEqExpr(lvl);
         next();
-        if (getToken().getType() == TokenType.AND_B) {
+        if (getType() == TokenType.AND_B) {
             Token t = getToken();
             popToken();
             Node r_node = parseAndExpr(lvl + 1);
-            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
+            return new BiAndOpNode(lvl, t, l_node, r_node);
         }
         return l_node;
     }
@@ -253,11 +256,11 @@ public class Parser {
     Node parseExclusiveOrExpr(int lvl) throws Exception {
         Node l_node = parseAndExpr(lvl);
         next();
-        if (getToken().getType() == TokenType.XOR) {
+        if (getType() == TokenType.XOR) {
             Token t = getToken();
             popToken();
             Node r_node = parseExclusiveOrExpr(lvl + 1);
-            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
+            return new XorOpNode(lvl, t, l_node.incLevel(), r_node);
         }
         return l_node;
     }
@@ -265,11 +268,11 @@ public class Parser {
     Node parseInclusiveOrExpr(int lvl) throws Exception{
         Node l_node = parseExclusiveOrExpr(lvl);
         next();
-        if (getToken().getType() == TokenType.OR_B) {
+        if (getType() == TokenType.OR_B) {
             Token t = getToken();
             popToken();
             Node r_node = parseInclusiveOrExpr(lvl + 1);
-            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
+            return new IncOrOpNode(lvl, t, l_node.incLevel(), r_node);
         }
         return l_node;
     }
@@ -277,11 +280,11 @@ public class Parser {
     Node parseLogicalAndExpr(int lvl)throws Exception {
         Node l_node = parseInclusiveOrExpr(lvl);
         next();
-        if (getToken().getType() == TokenType.AND) {
+        if (getType() == TokenType.AND) {
             Token t = getToken();
             popToken();
             Node r_node = parseLogicalAndExpr(lvl + 1);
-            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
+            return new AndOpNode(lvl, t, l_node.incLevel(), r_node);
         }
         return l_node;
     }
@@ -289,11 +292,11 @@ public class Parser {
     Node parseLogicalOrExpr(int lvl) throws Exception {
         Node l_node = parseLogicalAndExpr(lvl);
         next();
-        if (getToken().getType() == TokenType.OR) {
+        if (getType() == TokenType.OR) {
             Token t = getToken();
             popToken();
             Node r_node = parseLogicalOrExpr(lvl + 1);
-            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
+            return new OrOpNode(lvl, t, l_node.incLevel(), r_node);
         }
         return l_node;
     }
@@ -301,50 +304,40 @@ public class Parser {
     Node parseConditionalExpr(int lvl) throws Exception {
         Node l_node = parseLogicalOrExpr(lvl);
         next();
-        if (getToken().getType() == TokenType.QUESTION) {
+        if (getType() == TokenType.QUESTION) {
             Node middle, end;
             Token t = getToken();
             popToken();
-            middle = parseExpr(lvl + 2);
-            Node res = new Node(lvl, t);
+            middle = parseExpr(lvl + 1);
             next();
-            Token c = getToken();
-            if (getToken().getType() == TokenType.COLON) {
+            if (getType() == TokenType.COLON) {
                 popToken();
-                end = parseConditionalExpr(lvl + 2);
+                end = parseConditionalExpr(lvl + 1);
             }
             else {
                 throw new ParserException(getToken(), "Bad ternary operator");
             }
-            res.addChild(l_node.incLevel()).addChild(new Node(lvl + 1, c).addChild(middle).addChild(end));
-            return res;
+            return new TernaryOpNode(lvl, t, l_node.incLevel(), middle, end);
         }
         return l_node;
     }
     
     Node parseAssignExpr(int lvl) throws Exception {
         Node l_node = parseConditionalExpr(lvl);       
-        Node r_node = null;
-        Token curr_tok = getToken();
         next();
-        if (isAssigmentOp(getToken().getType())) {
-            curr_tok = getToken();
+        if (isAssigmentOp(getType())) {
+            Token curr_tok = getToken();
             popToken();
-            r_node = parseConditionalExpr(lvl + 1);
+            Node r_node = parseConditionalExpr(lvl + 1);
+            return new AssignOpNode(lvl, curr_tok, l_node.incLevel(), r_node);
         }
-        if (r_node != null) {
-            return new Node(lvl, curr_tok).addChild(l_node.incLevel()).addChild(r_node);
-        }
-        else {
-            return l_node;
-        }
-//        }
+        return l_node;
     }
 
     Node parseExpr(int lvl) throws Exception {
         Node l_node = parseAssignExpr(lvl);
         next();
-        if (getToken().getType() == TokenType.COMMA) {
+        if (getType() == TokenType.COMMA) {
             Token curr = getToken();
             popToken();
             Node r_node = parseExpr(lvl + 1);
@@ -356,13 +349,13 @@ public class Parser {
     /*void delaration(int lvl) throws Exception {
         Node l_node = declarationSpec(lvl);
         next();
-        if (getToken().getType() == TokenType.SEMICOLON) {
+        if (getType() == TokenType.SEMICOLON) {
             popToken();
             return l_node;
         }
         Node r_node = initDeclList(lvl + 1);
         next();
-        if (getToken().getType() == TokenType.SEMICOLON) {
+        if (getType() == TokenType.SEMICOLON) {
             popToken();
         } else {
             throw new ParserException(getToken(), "Forgot ;");
@@ -382,7 +375,7 @@ public class Parser {
             Token tok = getToken();
             popToken();
             next();
-            if (getToken().getType() == TokenType.SEMICOLON) {
+            if (getType() == TokenType.SEMICOLON) {
                 return new Node(lvl, getToken());
             }
             Node l_node = parseExpr(lvl + 1);
@@ -395,7 +388,7 @@ public class Parser {
     
     Node compoundStatement(int lvl) throws Exception {
         next();
-        if (getToken().getType() == TokenType.L_BRACE) {
+        if (getType() == TokenType.L_BRACE) {
             popToken();
             next();
             Token curr = getToken();
@@ -409,7 +402,7 @@ public class Parser {
     
     Node exprStatement(int lvl) throws Exception {
         next();
-        if (getToken().getType() == TokenType.SEMICOLON) {
+        if (getType() == TokenType.SEMICOLON) {
             popToken();
             return null;
         }
@@ -421,19 +414,19 @@ public class Parser {
     
     Node selectionSatement(int lvl) throws Exception {
         next();
-        //To do: Node  class tree
+        //To do: apply getType, unary op tests
         if (getToken().getText() == "if") {
             Token tok = getToken();
             popToken();
             eatToken(TokenType.L_PARENTHESIS, "Excpected (");
             Node cond = parseExpr(lvl + 1);
             eatToken(TokenType.R_PARENTHESIS, "Expected )");
-            Node stmt = parseStatement(lvl + 1);
+            Node stmt = null;//= parseStatement(lvl + 1);
             next();
             Node el = null;
             if (getToken().getText() == "else") {
                 popToken();
-                el = parseStatement(lvl + 1);
+                //el = parseStatement(lvl + 1);
             }
             return new Node(lvl, tok).addChild(cond).addChild(stmt).addChild(el);
         }
