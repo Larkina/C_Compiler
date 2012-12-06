@@ -13,7 +13,7 @@ public class C_Compiler {
     public static void main(String[] args) throws Exception {
 
         String tests = System.getProperty("user.dir") + "\\tests\\parser\\expr\\";
-        String t_n = "10.in";
+        String t_n = "12.in";
         Lexer ll = new Lexer(tests + t_n);
         Parser pp = new Parser(ll);
          Node nn = pp.parse();

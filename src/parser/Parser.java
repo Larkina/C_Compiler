@@ -90,16 +90,21 @@ public class Parser {
         return l_node;
     }
 
-    Node parsePostfixFactorized(int lvl) throws Exception {
+    Node parsePostfixFactorized(int lvl, Node left) throws Exception {
         TokenType type = getType();
         switch (type) {
             case L_BRAKET: {
                 popToken();
-                Node l_node = parseExpr(lvl + 1);
-                eatToken(TokenType.R_BRAKET, "Unclosed braket");
                 Token t = getToken();
-                Node r_node = parsePostfixFactorized(lvl + 1);
-                return new Node(lvl, t).addChild(l_node).addChild(r_node);
+                Node l_node = parseExpr(lvl + 1);
+                Node res = new IndexOpNode(lvl, t, left, l_node);
+                eatToken(TokenType.R_BRAKET, "Unclosed braket");
+                Node r_node = parsePostfixFactorized(lvl, res);
+                if (r_node != null) {
+                    res.incLevel();
+                    return r_node;
+                }
+                return res;
             }
             case L_PARENTHESIS: {
                 popToken();
@@ -110,24 +115,42 @@ public class Parser {
                     eatToken(TokenType.R_PARENTHESIS, "Unclosed parenthesis");
                     next();
                     Token t = getToken();
-                    r_node = parsePostfixExpr(lvl + 1);
-                    return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
+                    Node res = new ArgExprListNode(lvl, t, left, l_node);
+                    r_node = parsePostfixFactorized(lvl, res);
+                    if (r_node != null) {
+                        res.incLevel();
+                        return r_node;
+                    }
+                    return res;
                 }
                 else {
                     Token t = getToken();
                     popToken();
-                    return new Node(lvl, t).addChild(parsePostfixExpr(lvl + 1));
+                    Node res = new ArgExprListNode(lvl, t, left, null);
+                    r_node =  parsePostfixFactorized(lvl + 1, res);
+                    if (r_node != null) {
+                        return r_node;
+                    }
+                    return res;
                 }
             }
             case POINT: case ARROW: {
+                Token t = getToken();
                 popToken();
+                Token arg = getToken();
                 eatToken(TokenType.VAR, "Expected identifier");
-                next();
-                return parsePostfixExpr(lvl);
+                Node l_node = new Node(lvl + 1, arg);
+                Node res = new MemberOpNode(lvl, t, left, l_node);
+                Node r_node = parsePostfixFactorized(lvl + 1, res); 
+                if (r_node != null) {
+                    return r_node;
+                }
+                return res;
             }
             case INC: case DEC: {
+                Token t = getToken();
                 popToken();
-                return new Node(lvl, getToken()).addChild(parsePostfixExpr(lvl + 1));
+                return new Node(lvl, t).addChild(parsePostfixFactorized(lvl + 1, left));
             }
         }
         return null;
@@ -139,8 +162,8 @@ public class Parser {
         if (Util.isIn(getType(), TokenType.L_BRAKET, TokenType.L_PARENTHESIS,
                 TokenType.POINT, TokenType.ARROW, TokenType.INC, TokenType.DEC)) {
             Token t = getToken();
-            Node r_node = parsePostfixFactorized(lvl + 1);
-            return new PostfixOpNode(lvl, t, l_node.incLevel(), r_node);
+            Node r_node = parsePostfixFactorized(lvl, l_node.incLevel());
+            return r_node;
         }
         return l_node;
     }

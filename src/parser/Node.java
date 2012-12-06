@@ -20,9 +20,17 @@ public class Node {
         return res;
     }
     
+    String childrenToString() {
+        String ch = "";
+        for(Node i: children) {
+            ch += i.toString();
+        }    
+        return ch;
+    }
+    
     @Override
     public String toString() {
-        return getSpace() + "( " + token.getText() + " )\n";
+        return getSpace() + "( " + token.getText() + " )\n";// + childrenToString();
     }
 
     @Override
