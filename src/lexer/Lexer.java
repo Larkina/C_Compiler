@@ -257,7 +257,7 @@ public class Lexer {
                 curr = next_ch;
             }
 
-        } while (Character.isDigit(curr) || was_exp || (was_exp && Util.isIn(curr, '+', '-')));
+        } while (Character.isDigit(curr) || Util.isIn(curr, '.', 'e') || ((was_exp) && Util.isIn(curr, '+', '-')));
         in.unread(curr);
         String s = tmp.toString();
         Double dval;
@@ -378,7 +378,7 @@ public class Lexer {
                 p += 2;
                 concat += next_ch;
             }
-            if (next_ch == curr){
+            if ((next_ch == curr) && (!Util.isIn(curr, '*', '%',  '~', '!', '^'))){
                 if (Util.isIn(curr, '>', '<') && getNextChar(2) == '='){
                     concat = concat + next_ch + "=";
                     p += 3;
