@@ -38,6 +38,7 @@ public class Lexer {
         str_to_type.put("|", TokenType.OR_B);
         str_to_type.put("&", TokenType.AND_B);
         str_to_type.put("^", TokenType.XOR);
+        str_to_type.put("^=", TokenType.XOR_ASSIGN);
         str_to_type.put("!=", TokenType.NE);
         str_to_type.put("&=", TokenType.AND_ASSIGN);
         str_to_type.put("|=", TokenType.OR_ASSIGN);
