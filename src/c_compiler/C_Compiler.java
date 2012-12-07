@@ -13,14 +13,15 @@ public class C_Compiler {
     public static void main(String[] args) throws Exception {
 
         String tests = System.getProperty("user.dir") + "\\tests\\parser\\expr\\";
-        String t_n = "30.in";
+        String t_n = "09.in";
         try {
         Lexer ll = new Lexer(tests + t_n);
         Parser pp = new Parser(ll);
         Node nn = pp.parse();
         Util.drawSymantecTree(nn);
-        if (true)
+        if(true) {
             return;
+        }
        if (args.length == 0){
              System.out.println(" Simple C Compiler S8303a Larkina O.S. 2012.");
              System.out.println("Usage: java -jar C_compiler.java filename");
@@ -38,6 +39,7 @@ public class C_Compiler {
                     Lexer l = new Lexer(args[1]);
                     Parser p = new Parser(l);
                     Node n = p.parse();
+                    Util.drawSymantecTree(n);
                 }
             }
        }

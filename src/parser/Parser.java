@@ -16,7 +16,7 @@ public class Parser {
     }
 
     boolean buf = false;
-    Queue<Token> q = new LinkedList<>();
+    LinkedList<Token> q = new LinkedList<>();
 
     void next() throws Exception {
         lex.next();
@@ -24,13 +24,17 @@ public class Parser {
     }
 
     Token getToken() {
-        return q.peek();
+        return q.getFirst();
     }
 
     void popToken() {
         q.poll();
     }
 
+    Token next(int idx) {
+        return q.get(idx);
+    }
+    
     TokenType getType() {
         return getToken().getType();
     }
@@ -43,6 +47,16 @@ public class Parser {
         else {
             throw new ParserException(getToken(), error_msg);
         }
+    }
+    
+    void eatToken(String s, String error_msg) throws Exception {
+        next();
+        if (getToken().getText() == s) {
+            popToken();
+        }
+        else {
+            throw new ParserException(getToken(), error_msg);
+        }        
     }
 
     boolean isUnaryOp(TokenType t) {
@@ -57,6 +71,10 @@ public class Parser {
                 TokenType.AND_ASSIGN, TokenType.XOR_ASSIGN);
     }
 
+    boolean isTypeToken(String t) {
+        return Util.isIn(t, "int", "void", "double", "struct");
+    }
+    
     Node parsePrimaryExpr(int lvl) throws Exception {
          next();
          TokenType type = getType();
@@ -176,14 +194,9 @@ public class Parser {
         return l_node;
     }
     
-    Node parseTypeName(int lvl) {
-        //Todo: decl
-        return null;
-    }
-    
     Node parseCastExpr(int lvl) throws Exception{
         next();
-        if (getType() == TokenType.L_PARENTHESIS) {
+        if ((getType() == TokenType.L_PARENTHESIS) && isTypeToken(next(1).getText())) {
             popToken();
             parseTypeName(lvl + 1);
             eatToken(TokenType.R_PARENTHESIS, "Unclosed parenthesis");
@@ -353,7 +366,7 @@ public class Parser {
         if (isAssigmentOp(getType())) {
             Token curr_tok = getToken();
             popToken();
-            Node r_node = parseConditionalExpr(lvl + 1);
+            Node r_node = parseAssignExpr(lvl + 1);
             return new AssignOpNode(lvl, curr_tok, l_node.incLevel(), r_node);
         }
         return l_node;
@@ -388,6 +401,15 @@ public class Parser {
         //
     }*/
     
+    Node parseTypeName(int lvl) {
+        //Todo: decl
+        return null;
+    }
+    
+    Node parseStatement(int lvl){
+        return null;
+    }
+    
     Node jmpStatement(int lvl) throws Exception{
         next();
         if (Util.isIn(getToken().getText(), "continue", "break")) {
@@ -404,7 +426,6 @@ public class Parser {
                 return new Node(lvl, getToken());
             }
             Node l_node = parseExpr(lvl + 1);
-            Token c = getToken();
             eatToken(TokenType.SEMICOLON, "Forgot ;");
             return new Node(lvl, tok).addChild(l_node);
         }
@@ -439,7 +460,6 @@ public class Parser {
     
     Node selectionSatement(int lvl) throws Exception {
         next();
-        //To do: apply getType, unary op tests
         if (getToken().getText() == "if") {
             Token tok = getToken();
             popToken();
@@ -451,9 +471,59 @@ public class Parser {
             Node el = null;
             if (getToken().getText() == "else") {
                 popToken();
-                //el = parseStatement(lvl + 1);
+                el = parseStatement(lvl + 1);
             }
-            return new Node(lvl, tok).addChild(cond).addChild(stmt).addChild(el);
+            return new IfStmtNode(lvl, tok, cond, stmt, el);
+        }
+        return null;
+    }
+    
+    Node iterationStatement(int lvl) throws Exception {
+        next();
+        switch (getToken().getText()) {
+            case "while": {
+                Token t = getToken();
+                popToken();
+                eatToken(TokenType.L_PARENTHESIS, "Expected (");
+                Node cond = parseExpr(lvl + 1);
+                eatToken(TokenType.R_PARENTHESIS, "Unclosed parenthesis");
+                Node body = parseStatement(lvl + 1);
+                return new WhileStmtNode(lvl, t, cond, body);
+            }
+            case "do": {
+                Token t = getToken();
+                popToken();
+                Node stmt = parseStatement(lvl + 1);
+                eatToken("while", "Expected while");
+                eatToken(TokenType.L_PARENTHESIS, "Expected (");
+                Node cond = parseExpr(lvl + 1);
+                eatToken(TokenType.R_PARENTHESIS, "Unclosed parenthesis");
+                eatToken(TokenType.SEMICOLON, "Forgot ;");
+                return new DoWhileStmtNode(lvl, t, cond, stmt);
+            }
+            case "for": {
+                Token t = getToken();
+                popToken();
+                eatToken(TokenType.L_PARENTHESIS, "Expected (");
+                Node var = null, cond = null, act = null;
+                if (getType() == TokenType.SEMICOLON) {
+                   popToken(); 
+                }
+                var = parseExpr(lvl + 1);
+                eatToken(TokenType.SEMICOLON, "Expected ;");
+                if (getType() == TokenType.SEMICOLON) {
+                    popToken();
+                }
+                cond = parseExpr(lvl + 1);
+                eatToken(TokenType.SEMICOLON, "Expected ;");
+                if (getType() == TokenType.R_PARENTHESIS) {
+                    popToken();
+                }
+                act = parseExpr(lvl + 1);
+                eatToken(TokenType.R_PARENTHESIS, "Expected )");
+                Node stmt = parseStatement(lvl + 1);
+                return new ForStmtNode(lvl, t, var, cond, act, stmt);
+            }
         }
         return null;
     }

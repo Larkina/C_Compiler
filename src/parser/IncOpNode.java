@@ -11,7 +11,7 @@ public class IncOpNode extends UnaryOpNode{
 
     @Override
     public String toString() {
-        return "( left " + token.getText() + " )\n" + arg.toString();
+        return getSpace() + "( left " + token.getText() + " )\n" + arg.toString();
     }   
     
 }
