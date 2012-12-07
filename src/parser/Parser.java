@@ -2,7 +2,6 @@ package parser;
 
 import Utils.Util;
 import java.util.LinkedList;
-import java.util.Queue;
 import lexer.Lexer;
 import lexer.Token;
 import lexer.TokenType;
@@ -300,7 +299,7 @@ public class Parser {
     Node parseExclusiveOrExpr(int lvl) throws Exception {
         Node l_node = parseAndExpr(lvl);
         next();
-        if (getType() == TokenType.XOR) {
+        if ((getType() == TokenType.XOR)) {
             Token t = getToken();
             popToken();
             Node r_node = parseExclusiveOrExpr(lvl + 1);
@@ -383,8 +382,16 @@ public class Parser {
         }
         return l_node;
     }
-
-    /*void delaration(int lvl) throws Exception {
+    
+    Node declarationSpec(int lvl) {
+        return null;
+    }
+    
+    Node initDeclList(int lvl) {
+        return null;
+    }
+    
+    Node parseDelaration(int lvl) throws Exception {
         Node l_node = declarationSpec(lvl);
         next();
         if (getType() == TokenType.SEMICOLON) {
@@ -398,11 +405,12 @@ public class Parser {
         } else {
             throw new ParserException(getToken(), "Forgot ;");
         }
-        //
-    }*/
+        return null;
+    }
     
     Node parseTypeName(int lvl) {
-        //Todo: decl
+        //Node l_node = parseSpecifierQualiferList(lvl + 1);
+        
         return null;
     }
     
@@ -438,10 +446,19 @@ public class Parser {
             popToken();
             next();
             Token curr = getToken();
-            if (curr.getType() == TokenType.R_BRACE) {
+            if (getType() == TokenType.R_BRACE) {
                 return null;
             }
-            
+            Node decl = null;
+            if (isTypeToken(curr.getText())) {
+                decl = parseDelaration(lvl + 1);
+            }
+            if (getType() == TokenType.R_BRACE) {
+                return decl;
+            }
+            Node stmt = parseStatement(lvl + 1);
+            eatToken(TokenType.R_BRACE, "Expected }");
+            return new CompoundStmtNode(lvl, curr, decl, stmt);
         }
         return null;
     }
