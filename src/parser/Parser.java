@@ -55,7 +55,7 @@ public class Parser {
     }
 
     boolean isUnaryOp(TokenType t) {
-        return Util.isIn(t, TokenType.AND_B, TokenType.MUL, TokenType.PLUS,
+        return Util.isIn(t, TokenType.AND_B, TokenType.STAR, TokenType.PLUS,
             TokenType.MINUS, TokenType.NOT_B, TokenType.NOT);
     }
 
@@ -75,7 +75,7 @@ public class Parser {
     }
     
     boolean isDeclarator() {
-        return Util.isIn(getType(), TokenType.MUL, TokenType.L_PARENTHESIS, TokenType.VAR);
+        return Util.isIn(getType(), TokenType.STAR, TokenType.L_PARENTHESIS, TokenType.VAR);
     }
     
     Node parsePrimaryExpr(int lvl, boolean can_be_null) throws Exception {
@@ -234,7 +234,7 @@ public class Parser {
     Node parseMultiplicativeExpr(int lvl, boolean can_be_null) throws Exception {
         Node l_node = parseCastExpr(lvl, can_be_null);
         next();
-        if (Util.isIn(getType(), TokenType.MUL, TokenType.DIV, TokenType.MOD)) {
+        if (Util.isIn(getType(), TokenType.STAR, TokenType.DIV, TokenType.MOD)) {
             Token t = getToken();
             popToken();
             Node r_node = parseMultiplicativeExpr(lvl + 1, can_be_null);
@@ -390,10 +390,73 @@ public class Parser {
         return l_node;
     }
     
+    Node parsePoint(int lvl) throws Exception {
+        Node p = new Node(lvl, getToken());
+        popToken();
+        next();
+        while(getType() == TokenType.STAR) {
+            p.addChild(new Node(lvl + 1, getToken()));
+            popToken();
+            next();
+        }
+        return p;
+    }
+    
+    Node parseParameterList(int lvl) {
+        
+    }
+    
+    Node parseDirecDeclaratorFactorized(int lvl) throws Exception {
+        TokenType type = getType();
+        Token tok = getToken();
+        Node inner = null;
+        switch (type) {
+            case L_BRAKET: {
+               eatToken(TokenType.L_BRAKET, "Expected (");
+               inner = parseConditionalExpr(lvl + 1, true);
+               eatToken(TokenType.R_BRAKET, "Expected )");
+
+            }
+            case L_PARENTHESIS: {
+                eatToken(TokenType.L_PARENTHESIS, "Expected (");
+                if (getType() == TokenType.VAR) {
+                    inner = parseIdentiferList(lvl + 1);
+                }
+                if (getType() != TokenType.R_PARENTHESIS) {
+                    inner = parseParameterList(lvl + 1);
+                }
+                eatToken(TokenType.R_PARENTHESIS, "Expected )");
+            }
+        }
+        return new Node(lvl, tok).addChild(inner).addChild(parseDirecDeclaratorFactorized(lvl + 1));
+    }
+    
+    Node parseDirectDeclarator(int lvl) throws Exception {
+        Node node = null;
+        Token t = getToken();;
+        if (getType() == TokenType.VAR) {
+            node = new Node(lvl + 1, t);
+        } else {
+            eatToken(TokenType.L_PARENTHESIS, "Expected (");
+            node = parseDeclarator(lvl + 1);
+            eatToken(TokenType.R_PARENTHESIS, "Expected )");
+        }
+        Node fact = parseDirecDeclaratorFactorized(lvl + 1);
+        return new Node(lvl, t).addChild(node).addChild(fact);
+    }
+    
+    Node parseDeclarator(int lvl) throws Exception {
+        next();
+        Node point = null;
+        if (getType() == TokenType.STAR) {
+            point = parsePoint(lvl + 1);
+        }
+        return parseDirectDeclarator(lvl + 1).addChild(point);
+    }
+    
     Node parseStructDeclarator(int lvl) throws Exception {
         next();
         if(isDeclarator()) {
-            // decl const-expr ?
             Token t = getToken();
             Node decl = parseDeclarator(lvl + 1);
             Node expr = parseConditionalExpr(lvl + 1, true);
