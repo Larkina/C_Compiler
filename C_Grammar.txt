@@ -130,7 +130,7 @@ declaration
 
 declaration-specifiers
     type-specifier
-    type-specifier  declaration-specifiers
+    type-specifier declaration-specifiers
 
 init-declarator-list
     init-declarator
@@ -143,8 +143,6 @@ init-declarator
 type-specifier
     void
     int
-    long
-    float
     double
     struct-specifier
 
@@ -170,7 +168,7 @@ struct-declarator-list
 
 struct-declarator
     declarator
-     constant-expression
+    constant-expression
     declarator  constant-expression
 
 declarator
@@ -215,16 +213,19 @@ abstract-declarator
     direct-abstract-declarator
     pointer direct-abstract-declarator
 
+direct-abstract-declarator-f
+    [ ] direct-abstract-declarator-f
+    [ constant-expression ] direct-abstract-declarator-f
+    ( ) direct-abstract-declarator-f
+    ( parametr-type-list ) direct-abstract-declarator-f
+    e
+ 
 direct-abstract-declarator
-    ( abstract-declarator )
-    [ ]
-    [ constant-expression ]
-    ( )
-    ( parameter-type-list )
-    direct-abstract-declarator [ ]
-    direct-abstract-declarator [ constant-expression ]
-    direct-abstract-declarator ( )
-    direct-abstract-declarator ( parameter-type-list )
+    ( abstract-declarator ) direct-abstract-declarator-f
+    [ ] direct-abstract-declarator-f
+    [ constant-expression ] direct-abstract-declarator-f
+    ( ) direct-abstract-declarator-f
+    ( parameter-type-list ) direct-abstract-declarator-f
 
 initializer
     assignment-expression
