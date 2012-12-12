@@ -14,12 +14,12 @@ public class Util {
         return false;
     }
 
-    public static void drawSymantecTree(Node node) {
+    public static void drawSemanticTree(Node node) {
  //       for(int i = 0; i < node.getLevel(); ++i)
   //          System.out.print("\t");
         System.out.print(node.toString());
         for(Node i: node.getChildren()) {
-            drawSymantecTree(i);
+            drawSemanticTree(i);
         }
     }
 

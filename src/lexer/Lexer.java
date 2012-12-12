@@ -1,12 +1,12 @@
 package lexer;
 
+import Utils.Util;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PushbackInputStream;
 import java.util.HashMap;
 import java.util.HashSet;
-import Utils.Util;
 
 public class Lexer {
 
@@ -27,7 +27,7 @@ public class Lexer {
         str_to_type.put("/=", TokenType.DIV_ASSIGN);
         str_to_type.put("+", TokenType.PLUS);
         str_to_type.put("-", TokenType.MINUS);
-        str_to_type.put("*", TokenType.MUL);
+        str_to_type.put("*", TokenType.STAR);
         str_to_type.put("%", TokenType.MOD);
         str_to_type.put("+=", TokenType.PLUS_ASSIGN);
         str_to_type.put("-=", TokenType.MINUS_ASSIGN);
@@ -61,7 +61,8 @@ public class Lexer {
         str_to_type.put("\"", TokenType.STRING);
         str_to_type.put("\'", TokenType.CHAR_CONST);
         str_to_type.put("?", TokenType.QUESTION);
-
+        str_to_type.put("EOF", TokenType.EOF);
+        
         key_words.add("break");
         key_words.add("char");
         key_words.add("continue");
@@ -119,9 +120,13 @@ public class Lexer {
     }
 
     Token makeToken(Object val, String text, TokenType type){
-        return new Token<>(p + 1, l + 1, val, text, type);
+        return new Token(p + 1, l + 1, val, text, type);
     }
 
+    Token makeToken(String arg) {
+        return new Token(p + 1, l + 1, arg, arg, str_to_type.get(arg));
+    }
+    
     private void eatSpace() throws IOException{
         while ((curr = getNextChar()) != -1){
             if (curr == '\r' && getNextChar(1) == '\n'){
@@ -390,7 +395,7 @@ public class Lexer {
                     concat += next_ch;
                 }
             }
-            tmpToken = makeToken(concat, concat, str_to_type.get(concat));
+            tmpToken = makeToken(concat);
             if (concat.equals(to_str)) {
                 ++p;
             }
@@ -400,7 +405,7 @@ public class Lexer {
         }
         else
         {
-            tmpToken = makeToken(to_str, to_str, str_to_type.get(to_str));
+            tmpToken = makeToken(to_str);
 
         }
         return tmpToken;
@@ -408,7 +413,7 @@ public class Lexer {
 
     public boolean next() throws LexerException, IOException{
         if (curr == 0){
-            token = makeToken("EOF", "EOF", TokenType.EOF);
+            token = makeToken("EOF");
             return false;
         }
         eatSpace();
@@ -418,7 +423,7 @@ public class Lexer {
                 if ("eof".equals(t)) {
                     return false;
                 }
-                token = makeToken(t, t, str_to_type.get(t));
+                token = makeToken(t);
                 if ("/=".equals(t)) {
                     getNextChar();
                 }
@@ -437,7 +442,7 @@ public class Lexer {
                 token = getNumber("0");
             }
             else {
-                token = makeToken(curr, curr + "", str_to_type.get(curr + ""));
+                token = makeToken(curr + "");
             }
             return true;
         }
@@ -470,7 +475,7 @@ public class Lexer {
        }
 
         curr = 0;
-        token = makeToken("EOF", "EOF", TokenType.EOF);
+        token = makeToken("EOF");
         return false;
     }
 

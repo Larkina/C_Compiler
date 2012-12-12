@@ -169,3 +169,6 @@ manifest.mf
 nbproject/
 
 tests/lexer/*.ans
+tests/parser/expr/*.ans
+tests/lexer/C_Compiler.jar
+tests/parser/expr/C_Compiler.jar
