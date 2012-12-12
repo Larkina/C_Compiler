@@ -91,6 +91,14 @@ public class Parser {
         return (isTypeToken() && isNextTokenDeclarator()) || isNextTokenDeclarator();
     }
     
+    boolean isAdditiveOperation() {
+        return Util.isIn(getType(), TokenType.PLUS, TokenType.MINUS);
+    }
+    
+    boolean isMultiplicativeOperation() {
+        return Util.isIn(getType(), TokenType.STAR, TokenType.DIV, TokenType.MOD);
+    }
+    
     Node parsePrimaryExpr(int lvl, boolean can_be_null) throws Exception {
          next();
          TokenType type = getType();
@@ -247,11 +255,10 @@ public class Parser {
     Node parseMultiplicativeExpr(int lvl, boolean can_be_null) throws Exception {
         Node l_node = parseCastExpr(lvl, can_be_null);
         next();
-        if (Util.isIn(getType(), TokenType.STAR, TokenType.DIV, TokenType.MOD)) {
+        while (isMultiplicativeOperation()) {
             Token t = getToken();
             popToken();
-            Node r_node = parseMultiplicativeExpr(lvl + 1, can_be_null);
-            return new MulOpNode(lvl, t, l_node.incLevel(), r_node);
+            l_node = new MulOpNode(lvl, t, l_node.incLevel(), parseCastExpr(lvl + 1, can_be_null));
         }
         return l_node;
     }
@@ -259,11 +266,11 @@ public class Parser {
     Node parseAdditiveExpr(int lvl, boolean can_be_null) throws Exception{
         Node l_node = parseMultiplicativeExpr(lvl, can_be_null);
         next();
-        if (Util.isIn(getType(), TokenType.PLUS, TokenType.MINUS)) {
+        while (isAdditiveOperation()) {
             Token t = getToken();
             popToken();
-            Node r_node = parseAdditiveExpr(lvl + 1, can_be_null);
-            return new AddOpNode(lvl, t, l_node.incLevel(), r_node);
+            l_node = new AddOpNode(lvl, t, l_node.incLevel(), parseMultiplicativeExpr(lvl + 1, can_be_null));
+            next();
         }
         return l_node;
     }
@@ -920,6 +927,7 @@ public class Parser {
     }
     
     public Node parse() throws Exception {
-        return parseTraslationUnit(0);
+        return parseExpr(0);
+        //return parseTraslationUnit(0);
     }
 }
