@@ -47,7 +47,7 @@ public class Parser {
     
     void eatToken(String s, String error_msg) throws Exception {
         next();
-        if (getToken().getText() != s) {
+        if (!getToken().getText().equals(s)) {
             throw new ParserException(getToken(), error_msg);
         }        
         popToken();
@@ -81,6 +81,14 @@ public class Parser {
     
     boolean isAbstractDeclarator() {
         return Util.isIn(getType(), TokenType.STAR, TokenType.R_BRAKET, TokenType.R_PARENTHESIS);
+    }
+    
+    boolean isNextTokenDeclarator() {
+        return Util.isIn(next(1).getType(), TokenType.L_PARENTHESIS, TokenType.VAR, TokenType.STAR);
+    }
+    
+    boolean isFunctionDefinition() {
+        return (isTypeToken() && isNextTokenDeclarator()) || isNextTokenDeclarator();
     }
     
     Node parsePrimaryExpr(int lvl, boolean can_be_null) throws Exception {
@@ -733,11 +741,27 @@ public class Parser {
         return type;
     }
     
-    Node parseStatement(int lvl){
-        return null;
+    Node parseStatement(int lvl) throws Exception{
+        switch (getToken().getText()) {
+            case "if": {
+                return parseSelectionSatement(lvl);
+            } 
+            case "while": case "do": case "for": {
+                return parseIterationStatement(lvl);
+            }
+            case "continue": case "break": case "return": {
+                return parseJumpStatement(lvl);
+            }
+            case "{": {
+                return parseCompoundStatement(lvl);
+            }    
+            default: {
+                return parseExprStatement(lvl);
+            }
+        }
     }
     
-    Node jmpStatement(int lvl) throws Exception{
+    Node parseJumpStatement(int lvl) throws Exception{
         next();
         if (Util.isIn(getToken().getText(), "continue", "break")) {
             Token tok = getToken();
@@ -745,7 +769,7 @@ public class Parser {
             eatToken(TokenType.SEMICOLON, "Forgot ;");
             return new Node(lvl, tok);
         }
-        if (getToken().getText() == "return") {
+        if ("return".equals(getToken().getText())) {
             Token tok = getToken();
             popToken();
             next();
@@ -759,30 +783,25 @@ public class Parser {
         return null;
     }
     
-    Node compoundStatement(int lvl) throws Exception {
-        next();
-        if (getType() == TokenType.L_BRACE) {
-            popToken();
-            next();
-            Token curr = getToken();
-            if (getType() == TokenType.R_BRACE) {
-                return null;
-            }
-            Node decl = null;
-            if (isTypeToken(curr.getText())) {
-                decl = parseDelaration(lvl + 1);
-            }
-            if (getType() == TokenType.R_BRACE) {
-                return decl;
-            }
-            Node stmt = parseStatement(lvl + 1);
-            eatToken(TokenType.R_BRACE, "Expected }");
-            return new CompoundStmtNode(lvl, curr, decl, stmt);
+    Node parseCompoundStatement(int lvl) throws Exception {
+        eatToken(TokenType.L_BRACE, "Expected {");
+        Token curr = getToken();
+        if (getType() == TokenType.R_BRACE) {
+            return null;
         }
-        return null;
+        Node decl = null;
+        if (isTypeToken(curr.getText())) {
+            decl = parseDeclaration(lvl + 1);
+        }
+        if (getType() == TokenType.R_BRACE) {
+            return decl;
+        }
+        Node stmt = parseStatement(lvl + 1);
+        eatToken(TokenType.R_BRACE, "Expected }");
+        return new CompoundStmtNode(lvl, curr, decl, stmt);
     }
     
-    Node exprStatement(int lvl) throws Exception {
+    Node parseExprStatement(int lvl) throws Exception {
         next();
         if (getType() == TokenType.SEMICOLON) {
             popToken();
@@ -794,28 +813,23 @@ public class Parser {
         return l_node;
     }
     
-    Node selectionSatement(int lvl) throws Exception {
+    Node parseSelectionSatement(int lvl) throws Exception {
+        Token tok = getToken();
+        eatToken("if", "Expected if");
+        eatToken(TokenType.L_PARENTHESIS, "Expected (");
+        Node cond = parseExpr(lvl + 1);
+        eatToken(TokenType.R_PARENTHESIS, "Expected )");
+        Node stmt = parseStatement(lvl + 1);
         next();
-        if (getToken().getText() == "if") {
-            Token tok = getToken();
+        Node el = null;
+        if ("else".equals(getToken().getText())) {
             popToken();
-            eatToken(TokenType.L_PARENTHESIS, "Excpected (");
-            Node cond = parseExpr(lvl + 1);
-            eatToken(TokenType.R_PARENTHESIS, "Expected )");
-            Node stmt = null;//= parseStatement(lvl + 1);
-            next();
-            Node el = null;
-            if (getToken().getText() == "else") {
-                popToken();
-                el = parseStatement(lvl + 1);
-            }
-            return new IfStmtNode(lvl, tok, cond, stmt, el);
+            el = parseStatement(lvl + 1);
         }
-        return null;
+        return new IfStmtNode(lvl, tok, cond, stmt, el);
     }
     
-    Node iterationStatement(int lvl) throws Exception {
-        next();
+    Node parseIterationStatement(int lvl) throws Exception {
         switch (getToken().getText()) {
             case "while": {
                 Token t = getToken();
@@ -864,7 +878,48 @@ public class Parser {
         return null;
     }
     
+    Node parseDeclarationList(int lvl) throws Exception {
+        Node decl = parseDeclaration(lvl);
+        next();
+        while (isTypeToken()) {
+            decl.addChild(parseDeclaration(lvl));
+        }
+        return decl;
+    }
+    
+    Node parseFunctionDefinition(int lvl) throws Exception {
+        next();
+        Token t = getToken();
+        Node spec = null, decl = null, decl_list = null, stmt;
+        if (isTypeToken()) {
+            spec = parseDeclarationSpecifiers(lvl + 1);
+        }
+        if (isDeclarator()) {
+            decl = parseDeclarator(lvl + 1);
+        }
+        if (isTypeToken()) {
+            decl_list = parseDeclarationList(lvl + 1);
+        }
+        stmt = parseCompoundStatement(lvl);
+        return new FunctionNode(lvl, t, spec, decl, decl_list, stmt);
+    }
+    
+    Node parseExternalDeclaration(int lvl) throws Exception{
+        if (isTypeToken()) {
+            return parseDeclaration(lvl);
+        }
+        return parseFunctionDefinition(lvl);
+    }
+     
+    Node parseTraslationUnit(int lvl) throws Exception {
+        Node decl = parseExternalDeclaration(lvl);
+        while (isFunctionDefinition() || isTypeToken()) {
+            decl.addChild(parseExternalDeclaration(lvl));
+        }
+        return decl;
+    }
+    
     public Node parse() throws Exception {
-        return parseExpr(0);
+        return parseTraslationUnit(0);
     }
 }

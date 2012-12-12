@@ -233,11 +233,11 @@ initializer-list
 #
 
 statement
-    compound-statement
-    expression-statement
     selection-statement
     iteration-statement
     jump-statement
+    compound-statement
+    expression-statement
 
 compound-statement
     { }
@@ -246,12 +246,10 @@ compound-statement
     { declaration-list statement-list }
 
 declaration-list
-    declaration
-    declaration-list declaration
+    (declaration)+
 
 statement-list
-    statement
-    statement-list statement
+    (statement)+
 
 expression-statement
     ;
@@ -280,8 +278,7 @@ jump-statement
     return expression ;
 
 translation-unit
-    external-declaration
-    translation-unit external-declaration
+    (external-declaration)+
 
 external-declaration
     function-definition
