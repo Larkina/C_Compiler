@@ -177,19 +177,16 @@ direct-declarator-f
     [ ] direct-declarator-f
     [ constant-expression ] direct-declarator-f 
     ( ) direct-declarator-f
-    ( parameter-type-list ) direct-declarator-f
+    ( parameter-list ) direct-declarator-f
     ( identifier-list ) direct-declarator-f
 
 pointer
      *
      * pointer
 
-parameter-type-list
-    parameter-list
-
 parameter-list
     parameter-declaration
-    parameter-list , parameter-declaration
+    parameter-declaration, parameter-list 
 
 parameter-declaration
     declaration-specifiers declarator
@@ -198,7 +195,7 @@ parameter-declaration
 
 identifier-list
     identifier
-    identifier-list , identifier
+    identifier , identifier-list
 
 type-name
     (type-specifier)+
@@ -217,20 +214,19 @@ direct-abstract-declarator-f
     e
  
 direct-abstract-declarator
-    ( abstract-declarator ) direct-abstract-declarator-f
     [ ] direct-abstract-declarator-f
     [ constant-expression ] direct-abstract-declarator-f
+    ( abstract-declarator ) direct-abstract-declarator-f
     ( ) direct-abstract-declarator-f
-    ( parameter-type-list ) direct-abstract-declarator-f
+    ( parameter-list ) direct-abstract-declarator-f
 
 initializer
     assignment-expression
     { initializer-list }
-    { initializer-list , }
 
 initializer-list
     initializer
-    initializer-list , initializer
+    initializer , initializer-list
 
 #
 # C statement rules

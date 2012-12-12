@@ -14,7 +14,6 @@ public class Parser {
         lex = l;
     }
 
-    boolean buf = false;
     LinkedList<Token> q = new LinkedList<>();
 
     void next() throws Exception {
@@ -75,7 +74,13 @@ public class Parser {
     }
     
     boolean isDeclarator() {
-        return Util.isIn(getType(), TokenType.STAR, TokenType.L_PARENTHESIS, TokenType.VAR);
+        return Util.isIn(getType(), TokenType.L_PARENTHESIS, TokenType.VAR) ||
+                ((getType() == TokenType.STAR) && 
+                (Util.isIn(next(1).getType(), TokenType.L_PARENTHESIS, TokenType.VAR)));
+    }
+    
+    boolean isAbstractDeclarator() {
+        return Util.isIn(getType(), TokenType.STAR, TokenType.R_BRAKET, TokenType.R_PARENTHESIS);
     }
     
     Node parsePrimaryExpr(int lvl, boolean can_be_null) throws Exception {
@@ -402,8 +407,109 @@ public class Parser {
         return p;
     }
     
-    Node parseParameterList(int lvl) {
-        
+    Node parseAbstractDeclaratorFactorized(int lvl) throws Exception {
+        Token t = getToken();
+        TokenType type = getType();
+        Node inner = null, decl = null;
+        switch (type) {
+            case L_PARENTHESIS: {
+                 eatToken(type, "Expected (");
+                 if (getType() != TokenType.R_PARENTHESIS) {
+                    inner = parseParameterList(lvl + 1);
+                 }
+                eatToken(TokenType.R_PARENTHESIS, "Expected )");
+                break;               
+            }
+            case L_BRAKET: {
+                eatToken(type, "Expected (");
+                inner = parseConditionalExpr(lvl + 1, true);
+                eatToken(type, "Expected )");               
+            }
+            default: {
+                return null;
+            }
+        }
+        return new Node(lvl, t).addChild(inner).addChild(parseAbstractDeclaratorFactorized(lvl + 1));
+    }
+    
+    Node parseDirectAbstractDeclarator(int lvl) throws Exception {
+        Token t = getToken();
+        TokenType type = getType();
+        Node inner = null;
+        switch (type) {
+            case L_PARENTHESIS: {
+                eatToken(type, "Expected (");
+                if (isAbstractDeclarator()) {
+                    inner = parseAbstractDeclarator(lvl + 1);
+                }
+                next();
+                if (getType() != TokenType.R_PARENTHESIS) {
+                    inner = parseAbstractDeclarator(lvl + 1);
+                }
+                eatToken(TokenType.R_PARENTHESIS, "Expected )");
+                break;
+            }
+            case L_BRAKET: {
+                eatToken(type, "Expected [");
+                inner = parseConditionalExpr(lvl + 1, true);
+                eatToken(TokenType.R_PARENTHESIS, "Expected ]");
+                break;
+            }
+        }
+        return new Node(lvl, t).addChild(inner).addChild(parseAbstractDeclaratorFactorized(lvl + 1));
+    }
+    
+    Node parseAbstractDeclarator(int lvl) throws Exception {
+        next();
+        Node pointer = null, decl = null;
+        if (getType() == TokenType.STAR) {
+            pointer = parsePoint(lvl);
+            if (isAbstractDeclarator()) {
+                decl = parseDirectAbstractDeclarator(lvl + 1);
+                return new Node(lvl, getToken()).addChild(pointer.incLevel()).addChild(decl);
+            }
+            return pointer;
+        }
+        return parseDirectAbstractDeclarator(lvl);
+    }
+    
+    Node parseParameterDeclaration(int lvl) throws Exception {
+        Node decl_spec = parseDeclarationSpecifiers(lvl);
+        Node decl = null;
+        if (isDeclarator()) {
+            decl = parseDirectDeclarator(lvl + 1);
+            return new Node(lvl, getToken()).addChild(decl_spec.incLevel()).addChild(decl);
+        }
+        if (isAbstractDeclarator()) {
+            decl = parseAbstractDeclarator(lvl + 1);
+            return new Node(lvl, getToken()).addChild(decl_spec.incLevel()).addChild(decl);
+        }
+        return decl_spec;
+    }
+    
+    Node parseParameterList(int lvl) throws Exception {
+        Node l_node = parseParameterDeclaration(lvl);
+        next();
+        if (getType() == TokenType.COMMA) {
+            Token t = getToken();
+            popToken();
+            Node r_node = parseParameterList(lvl + 1);
+            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
+        }
+        return l_node;
+    }
+    
+    Node parseIdentiferList(int lvl) throws Exception {
+        next();
+        Node l_node = new Node(lvl, getToken());
+        next();
+        if (getType() == TokenType.COMMA) {
+            Token t = getToken();
+            popToken();
+            Node r_node = parseIdentiferList(lvl + 1);
+            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
+        }
+        return l_node;
     }
     
     Node parseDirecDeclaratorFactorized(int lvl) throws Exception {
@@ -415,7 +521,7 @@ public class Parser {
                eatToken(TokenType.L_BRAKET, "Expected (");
                inner = parseConditionalExpr(lvl + 1, true);
                eatToken(TokenType.R_BRAKET, "Expected )");
-
+               break;
             }
             case L_PARENTHESIS: {
                 eatToken(TokenType.L_PARENTHESIS, "Expected (");
@@ -426,6 +532,10 @@ public class Parser {
                     inner = parseParameterList(lvl + 1);
                 }
                 eatToken(TokenType.R_PARENTHESIS, "Expected )");
+                break;
+            }
+            default: {
+                return null;
             }
         }
         return new Node(lvl, tok).addChild(inner).addChild(parseDirecDeclaratorFactorized(lvl + 1));
@@ -528,7 +638,7 @@ public class Parser {
         return parseStructSpecifier(lvl);
     }
     
-    Node declarationSpec(int lvl) throws Exception {
+    Node parseDeclarationSpecifiers(int lvl) throws Exception {
         Node type = new Node(lvl, getToken());
         next();
         while(isTypeToken(getToken().getText())) {
@@ -539,31 +649,88 @@ public class Parser {
         return type;
     }
     
-    Node initDeclList(int lvl) {
-        return null;
+    Node parseInitializerList(int lvl) throws Exception {
+        Node l_node = parseInitializer(lvl);
+        next();
+        if (getType() == TokenType.COMMA) {
+            Token t = getToken();
+            popToken();
+            Node r_node = parseInitializerList(lvl + 1);
+            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
+        }
+        return l_node;
     }
     
-    Node parseDelaration(int lvl) throws Exception {
-        Node l_node = declarationSpec(lvl);
+    Node parseInitializer(int lvl) throws Exception {
+        next();
+        if (getType() == TokenType.L_BRACE) {
+            popToken();
+            Node l_node = parseInitializerList(lvl);
+            next();
+            if (getType() == TokenType.COMMA) {
+                popToken();
+            }
+            return l_node;
+        }
+        return parseAssignExpr(lvl);
+    }
+    
+    Node parseInitDeclarator(int lvl) throws Exception {
+        Node l_node = parseDeclarator(lvl);
+        next();
+        if (getType() == TokenType.ASSIGN) {
+            Token t = getToken();
+            popToken();
+            Node r_node = parseInitializer(lvl +  1);
+            return new AssignOpNode(lvl, t, l_node.incLevel(), r_node);
+        }
+        return l_node;
+    }
+    
+    Node parseInitDeclaratorlList(int lvl) throws Exception {
+        Node l_node = parseInitDeclarator(lvl);
+        next();
+        if (getType() == TokenType.COMMA) {
+            Token t = getToken();
+            popToken();
+            Node r_node = parseInitDeclaratorlList(lvl + 1);
+            return new Node(lvl, t).addChild(l_node.incLevel()).addChild(r_node);
+        }
+        return l_node;
+    }
+    
+    Node parseDeclaration(int lvl) throws Exception {
+        Node l_node = parseDeclarationSpecifiers(lvl);
         next();
         if (getType() == TokenType.SEMICOLON) {
             popToken();
             return l_node;
         }
-        Node r_node = initDeclList(lvl + 1);
+        Node r_node = parseInitDeclaratorlList(lvl + 1);
         next();
         if (getType() == TokenType.SEMICOLON) {
             popToken();
         } else {
             throw new ParserException(getToken(), "Forgot ;");
         }
-        return null;
+        return new Node(lvl, getToken()).addChild(l_node.incLevel()).addChild(r_node);
     }
     
-    Node parseTypeName(int lvl) {
-        //Node l_node = parseSpecifierQualiferList(lvl + 1);
-        
-        return null;
+    Node parseTypeName(int lvl) throws Exception {
+        next();
+        Node type = new Node(lvl, getToken());
+        popToken();
+        next();
+        while(isTypeToken()) {
+            type.addChild(new Node(lvl, getToken()));
+            popToken();
+            next();
+        }
+        if (isAbstractDeclarator()) {
+            Node decl = parseAbstractDeclarator(lvl + 1);
+            return new Node(lvl, getToken()).addChild(type.incLevel()).addChild(decl);
+        }
+        return type;
     }
     
     Node parseStatement(int lvl){
