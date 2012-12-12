@@ -129,8 +129,7 @@ declaration
     declaration-specifiers init-declarator-list ;
 
 declaration-specifiers
-    type-specifier
-    type-specifier declaration-specifiers
+    (type-specifier)+
 
 init-declarator-list
     init-declarator
@@ -152,15 +151,10 @@ struct-specifier
     struct identifier
 
 struct-declaration-list
-    struct-declaration
-    struct-declaration-list struct-declaration
+    (struct-declaration)+
 
 struct-declaration
-    specifier-qualifier-list struct-declarator-list ;
-
-specifier-qualifier-list
-    type-specifier
-    type-specifier specifier-qualifier-list 
+    (type-specifier)+ struct-declarator-list ;
 
 struct-declarator-list
     struct-declarator
@@ -169,20 +163,22 @@ struct-declarator-list
 struct-declarator
     declarator
     constant-expression
-    declarator  constant-expression
+    declarator constant-expression
 
 declarator
     direct-declarator
     pointer direct-declarator
 
 direct-declarator
-    identifier
-    ( declarator )
-    direct-declarator [ ]
-    direct-declarator [ constant-expression ]
-    direct-declarator ( )
-    direct-declarator ( parameter-type-list )
-    direct-declarator ( identifier-list )
+    identifier direct-declarator-f
+    ( declarator ) direct-declarator-f
+
+direct-declarator-f
+    [ ] direct-declarator-f
+    [ constant-expression ] direct-declarator-f 
+    ( ) direct-declarator-f
+    ( parameter-type-list ) direct-declarator-f
+    ( identifier-list ) direct-declarator-f
 
 pointer
      *
@@ -205,8 +201,8 @@ identifier-list
     identifier-list , identifier
 
 type-name
-    specifier-qualifier-list
-    specifier-qualifier-list abstract-declarator
+    (type-specifier)+
+    (type-specifier)+ abstract-declarator
 
 abstract-declarator
     pointer
