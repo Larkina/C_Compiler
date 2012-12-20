@@ -1,0 +1,5 @@
+int main() {
+	do 
+	--i;
+	while (i > 0);
+} 

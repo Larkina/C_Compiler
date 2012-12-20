@@ -1,0 +1,8 @@
+int main() {
+   while (1) {
+     break;
+   }
+   for(i = 0; i < n; ++i)
+       if (i == arg)
+            continue;
+}
