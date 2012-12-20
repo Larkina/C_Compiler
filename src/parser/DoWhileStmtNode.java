@@ -9,4 +9,9 @@ public class DoWhileStmtNode extends WhileStmtNode {
         super(lvl, token, cond, body);
     }
     
+    @Override
+    public String toString() {
+        return getSpace() + "DoWhileStmtNode\n" + body.toString() + cond.toString();
+    }
+    
 }

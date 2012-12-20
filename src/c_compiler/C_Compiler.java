@@ -1,24 +1,20 @@
 
 package c_compiler;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import lexer.Lexer;
-import lexer.LexerException;
-import parser.*;
 import Utils.*;
+import lexer.Lexer;
+import parser.*;
 
 public class C_Compiler {
 
     public static void main(String[] args) throws Exception {
 
-        String tests = System.getProperty("user.dir") + "\\tests\\parser\\expr\\";
-        String t_n = "09.in";
+        String tests = System.getProperty("user.dir") + "\\tests\\parser\\stmt\\";
+        String t_n = "07.in";
         try {
         Lexer ll = new Lexer(tests + t_n);
         Parser pp = new Parser(ll);
-        Node nn = pp.parse();
-        Util.drawSymantecTree(nn);
+        pp.parse();
         if(true) {
             return;
         }
@@ -39,12 +35,12 @@ public class C_Compiler {
                     Lexer l = new Lexer(args[1]);
                     Parser p = new Parser(l);
                     Node n = p.parse();
-                    Util.drawSymantecTree(n);
+                    Util.drawSemanticTree(n);
                 }
             }
        }
        catch (Exception e) {
-            System.out.println(e.getMessage());
+             System.out.println(e.getMessage());
        }
     }
 }

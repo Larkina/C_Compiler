@@ -12,5 +12,10 @@ public class WhileStmtNode extends Node{
         this.cond = cond;
         this.body = body;
     }
+
+    @Override
+    public String toString() {
+        return getSpace() + "WhileStmtNode\n" + cond.toString() + body.toString();
+    }
     
 }

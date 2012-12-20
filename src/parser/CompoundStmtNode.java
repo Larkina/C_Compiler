@@ -12,5 +12,14 @@ public class CompoundStmtNode extends Node{
         this.decl = decl;
         this.stmt = stmt;
     }
+
+    @Override
+    public String toString() {
+        String res = "";
+        if (stmt != null) {
+            res += stmt.childrenToString();
+        }
+        return res;
+    }
     
 }

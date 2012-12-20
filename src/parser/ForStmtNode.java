@@ -14,6 +14,15 @@ public class ForStmtNode extends Node{
         this.act = act;
         this.body = body;
     }
+
+    @Override
+    public String toString() {
+        return getSpace() + "ForStmtNode\n"  + 
+                (var == null ? "" : var )+ 
+                (cond == null ? "" : cond ) + 
+                (act == null ? "" : act) +
+                (body == null ? "" : body);
+    }
     
     
 }

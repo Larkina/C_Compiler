@@ -13,5 +13,14 @@ public class IfStmtNode extends Node {
         this.ifst = ifst;
         this.elstmt = elstmt;
     }
+
+    @Override
+    public String toString() {
+        String el = "";
+        if (elstmt != null) {
+            el = elstmt.toString();
+        }
+        return getSpace() + "IfStmtNode\n" + cond.toString() + ifst.toString() + el;
+    }
     
 }

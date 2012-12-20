@@ -22,7 +22,7 @@ public class ArgExprListNode extends Node{
         if (left != null) {
             a = left.toString() + a;
         }
-        return getSpace() + "( args )\n" + a;
+        return getSpace() + "( call )\n" + a;
     }
     
     @Override

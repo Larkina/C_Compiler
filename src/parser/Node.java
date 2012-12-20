@@ -30,9 +30,9 @@ public class Node {
     
     @Override
     public String toString() {
-        return getSpace() + "( " + token.getText() + " )\n";// + childrenToString();
+        return getSpace() + "( " + token.getText() + " )\n" + childrenToString();
     }
-
+    
     @Override
     public int hashCode() {
         return token.hashCode();
