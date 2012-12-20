@@ -129,7 +129,7 @@ declaration
     declaration-specifiers init-declarator-list ;
 
 declaration-specifiers
-    (type-specifier)+
+    type-specifier
 
 init-declarator-list
     init-declarator
@@ -146,24 +146,8 @@ type-specifier
     struct-specifier
 
 struct-specifier
-    struct { struct-declaration-list }
-    struct identifier { struct-declaration-list }
-    struct identifier
-
-struct-declaration-list
-    (struct-declaration)+
-
-struct-declaration
-    (type-specifier)+ struct-declarator-list ;
-
-struct-declarator-list
-    struct-declarator
-    struct-declarator , struct-declarator-list
-
-struct-declarator
-    declarator
-    constant-expression
-    declarator constant-expression
+    struct { declaration-list }
+    struct identifier { declaration-list }
 
 declarator
     direct-declarator
@@ -198,8 +182,8 @@ identifier-list
     identifier , identifier-list
 
 type-name
-    (type-specifier)+
-    (type-specifier)+ abstract-declarator
+    type-specifier
+    type-specifier abstract-declarator
 
 abstract-declarator
     pointer
@@ -285,7 +269,5 @@ external-declaration
     declaration
 
 function-definition
-                           declarator                  compound-statement
-    declaration-specifiers declarator                  compound-statement
-                           declarator declaration-list compound-statement
-    declaration-specifiers declarator declaration-list compound-statement
+                           declarator compound-statement
+    declaration-specifiers declarator compound-statement
